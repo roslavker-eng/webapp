@@ -3,63 +3,33 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>СИСТЕМА АБСОЛЮТ</title>
-    <script src="https://telegram.org/js/telegram-web-app.js?v=2"></script>
+    <title>АБСОЛЮТ</title>
+    <script src="https://telegram.org/js/telegram-web-app.js?v=3"></script>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@100;300;400&display=swap');
-        
-        :root { 
-            --accent: #4682B4; 
-            /* Сделали фон ещё на тон светлее и синее */
-            --bg-deep: #0f1f35; 
-            --bg-light: #1e3a5f;
-        }
-        
+        :root { --accent: #5A9BD5; --bg-deep: #0a1628; --bg-light: #1c3554; }
         body { 
             background: radial-gradient(circle at center, var(--bg-light) 0%, var(--bg-deep) 100%);
-            color: #fff; 
-            font-family: 'Inter', sans-serif; 
-            overflow: hidden; 
-            margin: 0; 
-            touch-action: manipulation; 
+            color: #fff; font-family: 'Inter', sans-serif; overflow: hidden; margin: 0; 
         }
-
-        .film-grain { 
-            position: fixed; 
-            top: 0; left: 0; width: 100%; height: 100%; 
-            background: url('https://upload.wikimedia.org/wikipedia/commons/7/76/1k_grain.png'); 
-            opacity: 0.05; 
-            pointer-events: none; 
-            z-index: 50; 
-        }
-
         .fade-in { animation: fadeIn 2s ease-out forwards; }
-        @keyframes fadeIn { 0% { opacity: 0; filter: blur(15px); } 100% { opacity: 1; filter: blur(0); } }
-
-        canvas { filter: drop-shadow(0 0 35px var(--accent)); }
-
-        .status-text { 
-            font-size: 10px; 
-            letter-spacing: 0.3em; 
-            color: rgba(255,255,255,0.5); 
-            text-transform: uppercase; 
-        }
+        @keyframes fadeIn { 0% { opacity: 0; filter: blur(10px); } 100% { opacity: 1; filter: blur(0); } }
+        canvas { filter: drop-shadow(0 0 30px var(--accent)); }
+        .status-text { font-size: 11px; letter-spacing: 0.2em; color: rgba(255,255,255,0.5); text-transform: uppercase; }
     </style>
 </head>
 <body class="flex flex-col items-center justify-center min-h-screen">
-    <div class="film-grain"></div>
-
     <div id="main-ui" class="fade-in flex flex-col items-center z-10 text-center">
-        <h1 class="text-2xl font-light tracking-[0.8em] uppercase opacity-90 mb-1">СИСТЕМА АБСОЛЮТ</h1>
-        <div id="accent-line" class="h-[1px] w-48 shadow-[0_0_25px_var(--accent)] transition-all duration-[3000ms] mx-auto"></div>
+        <h1 class="text-xl font-light tracking-[0.8em] uppercase opacity-80 mb-1">СИСТЕМА АБСОЛЮТ</h1>
+        <div id="accent-line" class="h-[1px] w-32 bg-[var(--accent)] opacity-50 mx-auto"></div>
         
         <canvas id="starCanvas" class="mt-12"></canvas>
         
-        <div class="mt-16 flex flex-col items-center gap-8">
-            <p id="status" class="status-text italic">Протоколы активны</p>
-            <button id="syncBtn" onclick="performSync()" class="backdrop-blur-md bg-white/5 border border-white/20 px-12 py-4 text-[12px] tracking-[0.3em] uppercase active:scale-95 transition-all">
-                Подтвердить вход
+        <div class="mt-16 flex flex-col items-center gap-6">
+            <p id="status" class="status-text">Готов к настройке</p>
+            <button id="syncBtn" onclick="performSync()" class="backdrop-blur-md bg-white/5 border border-white/20 px-12 py-4 text-[12px] tracking-[0.2em] uppercase active:scale-95 transition-all">
+                Настроить время
             </button>
         </div>
     </div>
@@ -68,10 +38,9 @@
         const tg = window.Telegram.WebApp;
         tg.expand();
         tg.ready();
-
         const canvas = document.getElementById('starCanvas');
         const ctx = canvas.getContext('2d');
-        let themeColor = '#4682B4';
+        let themeColor = '#5A9BD5';
 
         function playClickSound() {
             try {
@@ -80,66 +49,44 @@
                 const gainNode = audioCtx.createGain();
                 oscillator.type = 'sine';
                 oscillator.frequency.setValueAtTime(300, audioCtx.currentTime);
-                oscillator.frequency.exponentialRampToValueAtTime(80, audioCtx.currentTime + 0.1);
-                gainNode.gain.setValueAtTime(0.2, audioCtx.currentTime);
+                gainNode.gain.setValueAtTime(0.1, audioCtx.currentTime);
                 gainNode.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.1);
                 oscillator.connect(gainNode);
                 gainNode.connect(audioCtx.destination);
-                oscillator.start();
-                oscillator.stop(audioCtx.currentTime + 0.1);
-            } catch (e) { }
-        }
-
-        function initTheme() {
-            const now = new Date();
-            if (now.getDay() === 6) themeColor = '#F4D35E'; // Ещё более яркий янтарь для контраста
-            document.documentElement.style.setProperty('--accent', themeColor);
-            document.getElementById('accent-line').style.backgroundColor = themeColor;
+                oscillator.start(); oscillator.stop(audioCtx.currentTime + 0.1);
+            } catch (e) {}
         }
 
         function drawStar(values) {
-            const size = 320;
-            canvas.width = size; canvas.height = size;
-            const centerX = size / 2; const centerY = size / 2;
-            const maxR = 115;
+            const size = 320; canvas.width = size; canvas.height = size;
+            const centerX = size/2; const centerY = size/2; const maxR = 100;
             const points = [];
             for (let i = 0; i < 6; i++) {
-                const val = values[i] || 35;
-                const rPeak = (val / 100) * maxR;
-                const anglePeak = (i * 60 - 90) * (Math.PI / 180);
-                points.push({ x: centerX + rPeak * Math.cos(anglePeak), y: centerY + rPeak * Math.sin(anglePeak) });
-                const nextVal = values[(i + 1) % 6] || 35;
-                const rDent = ((val + nextVal) / 200) * (maxR / Math.sqrt(3));
-                const angleDent = (i * 60 - 60) * (Math.PI / 180);
-                points.push({ x: centerX + rDent * Math.cos(angleDent), y: centerY + rDent * Math.sin(angleDent) });
+                const r = (values[i]/100) * maxR;
+                const a = (i * 60 - 90) * (Math.PI/180);
+                points.push({x: centerX + r * Math.cos(a), y: centerY + r * Math.sin(a)});
+                const r2 = ((values[i] + values[(i+1)%6])/200) * (maxR/1.7);
+                const a2 = (i * 60 - 60) * (Math.PI/180);
+                points.push({x: centerX + r2 * Math.cos(a2), y: centerY + r2 * Math.sin(a2)});
             }
-            ctx.clearRect(0, 0, size, size);
-            ctx.beginPath();
-            ctx.moveTo(points[0].x, points[0].y);
-            points.forEach(p => ctx.lineTo(p.x, p.y));
-            ctx.closePath();
-            ctx.strokeStyle = themeColor;
-            ctx.lineWidth = 2.5;
-            ctx.stroke();
-            ctx.fillStyle = themeColor + '2A';
-            ctx.fill();
+            ctx.clearRect(0,0,size,size); ctx.beginPath(); ctx.moveTo(points[0].x, points[0].y);
+            points.forEach(p => ctx.lineTo(p.x, p.y)); ctx.closePath();
+            ctx.strokeStyle = themeColor; ctx.lineWidth = 2; ctx.stroke();
+            ctx.fillStyle = themeColor + '15'; ctx.fill();
         }
 
         function performSync() {
             playClickSound();
-            const btn = document.getElementById('syncBtn');
-            const status = document.getElementById('status');
-            btn.style.display = 'none';
-            status.innerText = "Синхронизация...";
+            document.getElementById('syncBtn').style.display = 'none';
+            document.getElementById('status').innerText = "Сверяю часовой пояс...";
             setTimeout(() => {
                 tg.sendData(Intl.DateTimeFormat().resolvedOptions().timeZone);
-                status.innerText = "Доступ подтвержден";
-                setTimeout(() => tg.close(), 1000);
-            }, 1800);
+                document.getElementById('status').innerText = "Готово";
+                setTimeout(() => tg.close(), 800);
+            }, 1200);
         }
 
-        initTheme();
-        drawStar([80, 55, 90, 45, 70, 65]);
+        drawStar([80, 60, 90, 50, 70, 85]);
     </script>
 </body>
 </html>
