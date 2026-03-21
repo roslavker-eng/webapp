@@ -17,8 +17,35 @@
         @keyframes fadeIn { 0% { opacity: 0; filter: blur(10px); } 100% { opacity: 1; filter: blur(0); } }
         canvas { filter: drop-shadow(0 0 20px var(--accent)); z-index: 5; }
         
-        .status-text { font-size: 9px; letter-spacing: 0.3em; color: rgba(255,255,255,0.4); text-transform: uppercase; margin-top: 4px; }
-        
+        /* Группа заголовков для идеальной центровки */
+        .header-group {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            width: 100%;
+            text-align: center;
+        }
+
+        .title-main {
+            font-size: 18px;
+            font-weight: 100;
+            line-height: 1;
+            letter-spacing: 0.8em;
+            text-transform: uppercase;
+            opacity: 0.9;
+            margin-bottom: 8px;
+            margin-right: -0.8em; /* Компенсация letter-spacing для центровки последнего символа */
+        }
+
+        .title-sub {
+            font-size: 9px;
+            letter-spacing: 0.35em;
+            color: rgba(255,255,255,0.4);
+            text-transform: uppercase;
+            margin-bottom: 12px;
+            margin-right: -0.35em; /* Аналогичная компенсация */
+        }
+
         .sphere-label {
             position: absolute;
             font-size: 8px;
@@ -37,12 +64,15 @@
     </style>
 </head>
 <body class="flex flex-col items-center justify-center min-h-screen">
-    <div id="main-ui" class="fade-in flex flex-col items-center z-10 text-center w-full relative">
-        <h1 class="text-lg font-light tracking-[0.8em] uppercase opacity-90 mb-0.5">СИСТЕМА АБСОЛЮТ</h1>
-        <p class="status-text mb-4 opacity-60">Шесть Сфер Системы</p>
-        <div class="h-[1px] w-24 bg-[var(--accent)] opacity-30 mx-auto mb-10"></div>
+    <div id="main-ui" class="fade-in flex flex-col items-center z-10 w-full relative">
         
-        <div id="starContainer" class="relative w-[340px] h-[340px] flex items-center justify-center">
+        <div class="header-group">
+            <h1 class="title-main">СИСТЕМА АБСОЛЮТ</h1>
+            <p class="title-sub">Шесть Сфер Системы</p>
+            <div class="h-[1px] w-24 bg-[var(--accent)] opacity-30"></div>
+        </div>
+        
+        <div id="starContainer" class="relative mt-12 w-[340px] h-[340px] flex items-center justify-center">
             <canvas id="starCanvas"></canvas>
             <div id="labels"></div>
         </div>
@@ -90,7 +120,6 @@
                 const label = document.createElement('div');
                 label.className = 'sphere-label';
                 
-                // Динамическое расстояние: чем длиннее луч, тем дальше надпись
                 const offset = 30; 
                 const lx = centerX + (r + offset) * Math.cos(a);
                 const ly = centerY + (r + offset) * Math.sin(a);
@@ -121,8 +150,8 @@
             ctx.fillStyle = grad; ctx.fill();
         }
 
-        // Рандомные данные для теста привязки
-        drawStar([85, 40, 95, 70, 50, 80]);
+        // Рандомные данные для теста
+        drawStar([85, 45, 95, 75, 55, 80]);
     </script>
 </body>
 </html>
