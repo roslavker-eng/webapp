@@ -13,92 +13,103 @@
             background: radial-gradient(circle at center, var(--bg-light) 0%, var(--bg-deep) 100%);
             color: #fff; font-family: 'Inter', sans-serif; overflow: hidden; margin: 0; 
         }
-        .fade-in { animation: fadeIn 2s ease-out forwards; }
+        .fade-in { animation: fadeIn 1.5s ease-out forwards; }
         @keyframes fadeIn { 0% { opacity: 0; filter: blur(10px); } 100% { opacity: 1; filter: blur(0); } }
-        canvas { filter: drop-shadow(0 0 30px var(--accent)); }
-        .status-text { font-size: 11px; letter-spacing: 0.2em; color: rgba(255,255,255,0.5); text-transform: uppercase; }
+        canvas { filter: drop-shadow(0 0 25px var(--accent)); }
+        
+        .status-text { font-size: 10px; letter-spacing: 0.3em; color: rgba(255,255,255,0.4); text-transform: uppercase; }
+        
+        /* Контейнер для точного позиционирования */
+        .labels-container { position: absolute; width: 320px; height: 320px; pointer-events: none; }
         
         .sphere-label {
             position: absolute;
-            font-size: 9px;
-            color: rgba(255,255,255,0.4);
+            font-size: 8px;
+            color: rgba(255,255,255,0.5);
             text-transform: uppercase;
-            letter-spacing: 0.12em;
-            width: 110px;
+            letter-spacing: 0.1em;
+            white-space: nowrap;
+            transform: translate(-50%, -50%); /* Центровка каждой надписи */
             text-align: center;
+            line-height: 1.4;
         }
-        .sphere-label.active { color: var(--accent); opacity: 1; }
+        .sphere-label span { color: var(--accent); font-weight: 300; display: block; font-size: 10px; }
+        .sphere-label.active { color: #fff; text-shadow: 0 0 10px var(--accent); }
     </style>
 </head>
 <body class="flex flex-col items-center justify-center min-h-screen">
-    <div id="main-ui" class="fade-in flex flex-col items-center z-10 text-center w-full px-4">
-        <h1 class="text-xl font-light tracking-[0.8em] uppercase opacity-80 mb-1">СИСТЕМА АБСОЛЮТ</h1>
-        <div class="h-[1px] w-32 bg-[var(--accent)] opacity-50 mx-auto"></div>
+    <div id="main-ui" class="fade-in flex flex-col items-center z-10 text-center w-full">
+        <h1 class="text-lg font-light tracking-[0.7em] uppercase opacity-70 mb-1">СИСТЕМА АБСОЛЮТ</h1>
+        <div class="h-[1px] w-24 bg-[var(--accent)] opacity-40 mx-auto"></div>
         
-        <div class="relative mt-16 w-[320px] h-[320px] flex items-center justify-center">
+        <div class="relative mt-12 w-[320px] h-[320px] flex items-center justify-center">
             <canvas id="starCanvas"></canvas>
             
-            <div class="sphere-label active" style="top: -5px; left: 50%; transform: translateX(-50%);">Психо-Духовная</div>
-            
-            <div class="sphere-label" style="top: 65px; right: -25px; text-align: left;">Интеллект</div>
-            <div class="sphere-label" style="bottom: 65px; right: -25px; text-align: left;">Материальная</div>
-            
-            <div class="sphere-label" style="bottom: -5px; left: 50%; transform: translateX(-50%);">Сексуальная</div>
-            
-            <div class="sphere-label" style="bottom: 65px; left: -25px; text-align: right;">Физическая</div>
-            <div class="sphere-label" style="top: 65px; left: -25px; text-align: right;">Социальная</div>
+            <div class="labels-container">
+                <div id="label-0" class="sphere-label active" style="top: 8%; left: 50%;">Духовно-психологическая<br><span id="val-0">0%</span></div>
+                <div id="label-1" class="sphere-label" style="top: 28%; left: 88%;">Социальная<br><span id="val-1">0%</span></div>
+                <div id="label-2" class="sphere-label" style="top: 72%; left: 88%;">Физическая<br><span id="val-2">0%</span></div>
+                <div id="label-3" class="sphere-label" style="top: 92%; left: 50%;">Сексуальная<br><span id="val-3">0%</span></div>
+                <div id="label-4" class="sphere-label" style="top: 72%; left: 12%;">Материальная<br><span id="val-4">0%</span></div>
+                <div id="label-5" class="sphere-label" style="top: 28%; left: 12%;">Интеллектуальная<br><span id="val-5">0%</span></div>
+            </div>
         </div>
         
-        <div class="mt-16 flex flex-col items-center gap-6">
-            <p id="status" class="status-text tracking-[0.3em]">Система активна</p>
-            <button id="syncBtn" onclick="tg.close()" class="backdrop-blur-md bg-white/5 border border-white/20 px-12 py-4 text-[11px] tracking-[0.25em] uppercase active:scale-95 transition-all">
-                Закрыть
+        <div class="mt-12 flex flex-col items-center gap-6">
+            <p id="status" class="status-text">Анализ состояния</p>
+            <button onclick="tg.close()" class="backdrop-blur-md bg-white/5 border border-white/20 px-10 py-3 text-[10px] tracking-[0.2em] uppercase active:scale-95 transition-all">
+                Закрыть систему
             </button>
         </div>
     </div>
 
     <script>
         const tg = window.Telegram.WebApp;
-        tg.expand();
-        tg.ready();
+        tg.expand(); tg.ready();
         const canvas = document.getElementById('starCanvas');
         const ctx = canvas.getContext('2d');
-        let themeColor = '#5A9BD5';
+        const themeColor = '#5A9BD5';
 
         function drawStar(values) {
             const size = 320; canvas.width = size; canvas.height = size;
-            const centerX = size/2; const centerY = size/2; const maxR = 115;
+            const centerX = size/2; const centerY = size/2; 
+            const maxR = 105; // Чуть уменьшил радиус звезды, чтобы надписи были ближе
+
             const points = [];
-            
             for (let i = 0; i < 6; i++) {
+                // Обновляем проценты в HTML
+                document.getElementById(`val-${i}`).innerText = values[i] + '%';
+                
                 const r = (values[i]/100) * maxR;
                 const a = (i * 60 - 90) * (Math.PI/180);
                 points.push({x: centerX + r * Math.cos(a), y: centerY + r * Math.sin(a)});
                 
-                const r2 = ((values[i] + values[(i+1)%6])/200) * (maxR/1.8);
+                const r2 = ((values[i] + values[(i+1)%6])/200) * (maxR/1.9);
                 const a2 = (i * 60 - 60) * (Math.PI/180);
                 points.push({x: centerX + r2 * Math.cos(a2), y: centerY + r2 * Math.sin(a2)});
             }
             
             ctx.clearRect(0,0,size,size); 
-            ctx.beginPath(); 
-            ctx.moveTo(points[0].x, points[0].y);
-            points.forEach(p => ctx.lineTo(p.x, p.y)); 
-            ctx.closePath();
             
-            ctx.strokeStyle = themeColor; 
-            ctx.lineWidth = 2; 
-            ctx.stroke();
+            // Сетка
+            ctx.strokeStyle = 'rgba(90, 155, 213, 0.08)';
+            ctx.lineWidth = 1;
+            for(let j=1; j<=4; j++) {
+                ctx.beginPath(); ctx.arc(centerX, centerY, (maxR/4)*j, 0, Math.PI*2); ctx.stroke();
+            }
+
+            // Звезда
+            ctx.beginPath(); ctx.moveTo(points[0].x, points[0].y);
+            points.forEach(p => ctx.lineTo(p.x, p.y)); ctx.closePath();
             
-            const gradient = ctx.createRadialGradient(centerX, centerY, 10, centerX, centerY, maxR);
-            gradient.addColorStop(0, themeColor + '40');
-            gradient.addColorStop(1, themeColor + '10');
-            ctx.fillStyle = gradient; 
-            ctx.fill();
+            ctx.strokeStyle = themeColor; ctx.lineWidth = 2; ctx.stroke();
+            const grad = ctx.createRadialGradient(centerX, centerY, 0, centerX, centerY, maxR);
+            grad.addColorStop(0, themeColor + '50'); grad.addColorStop(1, themeColor + '10');
+            ctx.fillStyle = grad; ctx.fill();
         }
 
-        // Заглушка данных для визуализации (потом пойдут из БД)
-        drawStar([85, 70, 95, 80, 60, 75]);
+        // Данные: [Психо, Соц, Физ, Секс, Мат, Интел]
+        drawStar([85, 70, 95, 80, 65, 75]);
     </script>
 </body>
 </html>
