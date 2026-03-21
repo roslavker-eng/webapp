@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>АБСОЛЮТ</title>
+    <title>АБСОЛЮТ | ДАШБОРД</title>
     <script src="https://telegram.org/js/telegram-web-app.js?v=3"></script>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
@@ -17,19 +17,41 @@
         @keyframes fadeIn { 0% { opacity: 0; filter: blur(10px); } 100% { opacity: 1; filter: blur(0); } }
         canvas { filter: drop-shadow(0 0 30px var(--accent)); }
         .status-text { font-size: 11px; letter-spacing: 0.2em; color: rgba(255,255,255,0.5); text-transform: uppercase; }
+        
+        /* Стили для подписей сфер */
+        .sphere-label {
+            position: absolute;
+            font-size: 10px;
+            color: rgba(255,255,255,0.4);
+            text-transform: uppercase;
+            letter-spacing: 0.15em;
+            width: 100px;
+            text-align: center;
+            transition: color 0.3s;
+        }
+        .sphere-label.active { color: var(--accent); opacity: 1; }
     </style>
 </head>
 <body class="flex flex-col items-center justify-center min-h-screen">
-    <div id="main-ui" class="fade-in flex flex-col items-center z-10 text-center">
+    <div id="main-ui" class="fade-in flex flex-col items-center z-10 text-center w-full px-4">
         <h1 class="text-xl font-light tracking-[0.8em] uppercase opacity-80 mb-1">СИСТЕМА АБСОЛЮТ</h1>
         <div id="accent-line" class="h-[1px] w-32 bg-[var(--accent)] opacity-50 mx-auto"></div>
         
-        <canvas id="starCanvas" class="mt-12"></canvas>
+        <div class="relative mt-16 w-[320px] h-[320px] flex items-center justify-center">
+            <canvas id="starCanvas"></canvas>
+            
+            <div class="sphere-label active" style="top: -25px; left: 50%; transform: translateX(-50%);">Духовная</div>
+            <div class="sphere-label" style="top: 55px; right: -45px; text-align: left;">Интеллект</div>
+            <div class="sphere-label" style="bottom: 55px; right: -45px; text-align: left;">Материальная</div>
+            <div class="sphere-label" style="bottom: -25px; left: 50%; transform: translateX(-50%);">Физическая</div>
+            <div class="sphere-label" style="bottom: 55px; left: -45px; text-align: right;">Психическая</div>
+            <div class="sphere-label" style="top: 55px; left: -45px; text-align: right;">Социальная</div>
+        </div>
         
-        <div class="mt-16 flex flex-col items-center gap-6">
-            <p id="status" class="status-text">Готов к настройке</p>
-            <button id="syncBtn" onclick="performSync()" class="backdrop-blur-md bg-white/5 border border-white/20 px-12 py-4 text-[12px] tracking-[0.2em] uppercase active:scale-95 transition-all">
-                Настроить время
+        <div class="mt-20 flex flex-col items-center gap-6">
+            <p id="status" class="status-text tracking-[0.3em]">Система активна</p>
+            <button id="syncBtn" onclick="performSync()" class="backdrop-blur-md bg-white/5 border border-white/20 px-12 py-4 text-[11px] tracking-[0.25em] uppercase active:scale-95 transition-all">
+                Состояние системы
             </button>
         </div>
     </div>
@@ -48,8 +70,8 @@
                 const oscillator = audioCtx.createOscillator();
                 const gainNode = audioCtx.createGain();
                 oscillator.type = 'sine';
-                oscillator.frequency.setValueAtTime(300, audioCtx.currentTime);
-                gainNode.gain.setValueAtTime(0.1, audioCtx.currentTime);
+                oscillator.frequency.setValueAtTime(440, audioCtx.currentTime);
+                gainNode.gain.setValueAtTime(0.05, audioCtx.currentTime);
                 gainNode.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.1);
                 oscillator.connect(gainNode);
                 gainNode.connect(audioCtx.destination);
@@ -59,34 +81,61 @@
 
         function drawStar(values) {
             const size = 320; canvas.width = size; canvas.height = size;
-            const centerX = size/2; const centerY = size/2; const maxR = 100;
+            const centerX = size/2; const centerY = size/2; const maxR = 110;
             const points = [];
+            
             for (let i = 0; i < 6; i++) {
                 const r = (values[i]/100) * maxR;
                 const a = (i * 60 - 90) * (Math.PI/180);
                 points.push({x: centerX + r * Math.cos(a), y: centerY + r * Math.sin(a)});
-                const r2 = ((values[i] + values[(i+1)%6])/200) * (maxR/1.7);
+                
+                // Внутренние точки для эффекта звезды
+                const r2 = ((values[i] + values[(i+1)%6])/200) * (maxR/1.8);
                 const a2 = (i * 60 - 60) * (Math.PI/180);
                 points.push({x: centerX + r2 * Math.cos(a2), y: centerY + r2 * Math.sin(a2)});
             }
-            ctx.clearRect(0,0,size,size); ctx.beginPath(); ctx.moveTo(points[0].x, points[0].y);
-            points.forEach(p => ctx.lineTo(p.x, p.y)); ctx.closePath();
-            ctx.strokeStyle = themeColor; ctx.lineWidth = 2; ctx.stroke();
-            ctx.fillStyle = themeColor + '15'; ctx.fill();
+            
+            ctx.clearRect(0,0,size,size); 
+            
+            // Рисуем сетку (паутину) для красоты
+            ctx.strokeStyle = 'rgba(90, 155, 213, 0.1)';
+            ctx.lineWidth = 1;
+            for(let j=1; j<=4; j++) {
+                ctx.beginPath();
+                ctx.arc(centerX, centerY, (maxR/4)*j, 0, Math.PI*2);
+                ctx.stroke();
+            }
+
+            // Рисуем саму фигуру состояния
+            ctx.beginPath(); 
+            ctx.moveTo(points[0].x, points[0].y);
+            points.forEach(p => ctx.lineTo(p.x, p.y)); 
+            ctx.closePath();
+            
+            ctx.strokeStyle = themeColor; 
+            ctx.lineWidth = 2; 
+            ctx.stroke();
+            
+            const gradient = ctx.createRadialGradient(centerX, centerY, 10, centerX, centerY, maxR);
+            gradient.addColorStop(0, themeColor + '40');
+            gradient.addColorStop(1, themeColor + '10');
+            ctx.fillStyle = gradient; 
+            ctx.fill();
         }
 
         function performSync() {
             playClickSound();
-            document.getElementById('syncBtn').style.display = 'none';
-            document.getElementById('status').innerText = "Сверяю часовой пояс...";
+            document.getElementById('status').innerText = "Синхронизация данных...";
             setTimeout(() => {
                 tg.sendData(Intl.DateTimeFormat().resolvedOptions().timeZone);
-                document.getElementById('status').innerText = "Готово";
-                setTimeout(() => tg.close(), 800);
-            }, 1200);
+                document.getElementById('status').innerText = "Обновлено";
+                setTimeout(() => tg.close(), 600);
+            }, 1000);
         }
 
-        drawStar([80, 60, 90, 50, 70, 85]);
+        // Рандомные значения для демонстрации (потом будем брать из БД)
+        drawStar([85, 70, 95, 60, 75, 80]);
     </script>
 </body>
 </html>
+
