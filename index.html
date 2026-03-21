@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>АБСОЛЮТ | ДАШБОРД</title>
+    <title>АБСОЛЮТ | СИСТЕМА</title>
     <script src="https://telegram.org/js/telegram-web-app.js?v=3"></script>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
@@ -13,50 +13,41 @@
             background: radial-gradient(circle at center, var(--bg-light) 0%, var(--bg-deep) 100%);
             color: #fff; font-family: 'Inter', sans-serif; overflow: hidden; margin: 0; 
         }
-        .fade-in { animation: fadeIn 1.5s ease-out forwards; }
+        .fade-in { animation: fadeIn 1.2s ease-out forwards; }
         @keyframes fadeIn { 0% { opacity: 0; filter: blur(10px); } 100% { opacity: 1; filter: blur(0); } }
-        canvas { filter: drop-shadow(0 0 25px var(--accent)); }
+        canvas { filter: drop-shadow(0 0 20px var(--accent)); z-index: 5; }
         
-        .status-text { font-size: 10px; letter-spacing: 0.3em; color: rgba(255,255,255,0.4); text-transform: uppercase; }
-        
-        /* Контейнер для точного позиционирования */
-        .labels-container { position: absolute; width: 320px; height: 320px; pointer-events: none; }
+        .status-text { font-size: 9px; letter-spacing: 0.3em; color: rgba(255,255,255,0.4); text-transform: uppercase; margin-top: 4px; }
         
         .sphere-label {
             position: absolute;
             font-size: 8px;
-            color: rgba(255,255,255,0.5);
+            color: rgba(255,255,255,0.7);
             text-transform: uppercase;
             letter-spacing: 0.1em;
-            white-space: nowrap;
-            transform: translate(-50%, -50%); /* Центровка каждой надписи */
             text-align: center;
-            line-height: 1.4;
+            pointer-events: none;
+            white-space: nowrap;
+            transform: translate(-50%, -50%);
+            transition: all 0.6s cubic-bezier(0.34, 1.56, 0.64, 1);
+            z-index: 10;
+            line-height: 1.2;
         }
-        .sphere-label span { color: var(--accent); font-weight: 300; display: block; font-size: 10px; }
-        .sphere-label.active { color: #fff; text-shadow: 0 0 10px var(--accent); }
+        .sphere-label b { color: var(--accent); font-size: 10px; display: block; margin-top: 2px; font-weight: 400; }
     </style>
 </head>
 <body class="flex flex-col items-center justify-center min-h-screen">
-    <div id="main-ui" class="fade-in flex flex-col items-center z-10 text-center w-full">
-        <h1 class="text-lg font-light tracking-[0.7em] uppercase opacity-70 mb-1">СИСТЕМА АБСОЛЮТ</h1>
-        <div class="h-[1px] w-24 bg-[var(--accent)] opacity-40 mx-auto"></div>
+    <div id="main-ui" class="fade-in flex flex-col items-center z-10 text-center w-full relative">
+        <h1 class="text-lg font-light tracking-[0.8em] uppercase opacity-90 mb-0.5">СИСТЕМА АБСОЛЮТ</h1>
+        <p class="status-text mb-4 opacity-60">Шесть Сфер Системы</p>
+        <div class="h-[1px] w-24 bg-[var(--accent)] opacity-30 mx-auto mb-10"></div>
         
-        <div class="relative mt-12 w-[320px] h-[320px] flex items-center justify-center">
+        <div id="starContainer" class="relative w-[340px] h-[340px] flex items-center justify-center">
             <canvas id="starCanvas"></canvas>
-            
-            <div class="labels-container">
-                <div id="label-0" class="sphere-label active" style="top: 8%; left: 50%;">Духовно-психологическая<br><span id="val-0">0%</span></div>
-                <div id="label-1" class="sphere-label" style="top: 28%; left: 88%;">Социальная<br><span id="val-1">0%</span></div>
-                <div id="label-2" class="sphere-label" style="top: 72%; left: 88%;">Физическая<br><span id="val-2">0%</span></div>
-                <div id="label-3" class="sphere-label" style="top: 92%; left: 50%;">Сексуальная<br><span id="val-3">0%</span></div>
-                <div id="label-4" class="sphere-label" style="top: 72%; left: 12%;">Материальная<br><span id="val-4">0%</span></div>
-                <div id="label-5" class="sphere-label" style="top: 28%; left: 12%;">Интеллектуальная<br><span id="val-5">0%</span></div>
-            </div>
+            <div id="labels"></div>
         </div>
         
-        <div class="mt-12 flex flex-col items-center gap-6">
-            <p id="status" class="status-text">Анализ состояния</p>
+        <div class="mt-14">
             <button onclick="tg.close()" class="backdrop-blur-md bg-white/5 border border-white/20 px-10 py-3 text-[10px] tracking-[0.2em] uppercase active:scale-95 transition-all">
                 Закрыть систему
             </button>
@@ -68,37 +59,59 @@
         tg.expand(); tg.ready();
         const canvas = document.getElementById('starCanvas');
         const ctx = canvas.getContext('2d');
+        const labelsContainer = document.getElementById('labels');
         const themeColor = '#5A9BD5';
 
+        const sphereNames = [
+            "Духовно-психологическая",
+            "Социальная",
+            "Физическая",
+            "Сексуальная",
+            "Материальная",
+            "Интеллектуальная"
+        ];
+
         function drawStar(values) {
-            const size = 320; canvas.width = size; canvas.height = size;
+            const size = 340; canvas.width = size; canvas.height = size;
             const centerX = size/2; const centerY = size/2; 
-            const maxR = 105; // Чуть уменьшил радиус звезды, чтобы надписи были ближе
+            const maxR = 105; 
 
             const points = [];
+            labelsContainer.innerHTML = ''; 
+
             for (let i = 0; i < 6; i++) {
-                // Обновляем проценты в HTML
-                document.getElementById(`val-${i}`).innerText = values[i] + '%';
-                
                 const r = (values[i]/100) * maxR;
                 const a = (i * 60 - 90) * (Math.PI/180);
-                points.push({x: centerX + r * Math.cos(a), y: centerY + r * Math.sin(a)});
                 
-                const r2 = ((values[i] + values[(i+1)%6])/200) * (maxR/1.9);
+                const x = centerX + r * Math.cos(a);
+                const y = centerY + r * Math.sin(a);
+                points.push({x, y});
+
+                const label = document.createElement('div');
+                label.className = 'sphere-label';
+                
+                // Динамическое расстояние: чем длиннее луч, тем дальше надпись
+                const offset = 30; 
+                const lx = centerX + (r + offset) * Math.cos(a);
+                const ly = centerY + (r + offset) * Math.sin(a);
+                
+                label.style.left = `${lx}px`;
+                label.style.top = `${ly}px`;
+                label.innerHTML = `${sphereNames[i]}<b>${values[i]}%</b>`;
+                labelsContainer.appendChild(label);
+
+                const r2 = ((values[i] + values[(i+1)%6])/200) * (maxR/1.85);
                 const a2 = (i * 60 - 60) * (Math.PI/180);
                 points.push({x: centerX + r2 * Math.cos(a2), y: centerY + r2 * Math.sin(a2)});
             }
             
             ctx.clearRect(0,0,size,size); 
-            
-            // Сетка
-            ctx.strokeStyle = 'rgba(90, 155, 213, 0.08)';
+            ctx.strokeStyle = 'rgba(90, 155, 213, 0.12)';
             ctx.lineWidth = 1;
             for(let j=1; j<=4; j++) {
                 ctx.beginPath(); ctx.arc(centerX, centerY, (maxR/4)*j, 0, Math.PI*2); ctx.stroke();
             }
 
-            // Звезда
             ctx.beginPath(); ctx.moveTo(points[0].x, points[0].y);
             points.forEach(p => ctx.lineTo(p.x, p.y)); ctx.closePath();
             
@@ -108,8 +121,8 @@
             ctx.fillStyle = grad; ctx.fill();
         }
 
-        // Данные: [Психо, Соц, Физ, Секс, Мат, Интел]
-        drawStar([85, 70, 95, 80, 65, 75]);
+        // Рандомные данные для теста привязки
+        drawStar([85, 40, 95, 70, 50, 80]);
     </script>
 </body>
 </html>
