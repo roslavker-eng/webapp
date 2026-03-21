@@ -25,7 +25,7 @@
             position: absolute; font-size: 8px; color: rgba(255,255,255,0.7);
             text-transform: uppercase; letter-spacing: 0.1em; text-align: center;
             pointer-events: none; white-space: nowrap; transform: translate(-50%, -50%);
-            transition: all 0.8s cubic-bezier(0.34, 1.56, 0.64, 1); z-index: 10; line-height: 1.2;
+            z-index: 10; line-height: 1.2;
         }
         .sphere-label b { color: var(--accent); font-size: 10px; display: block; margin-top: 2px; font-weight: 400; }
     </style>
@@ -54,6 +54,7 @@
     <script>
         const tg = window.Telegram.WebApp;
         tg.expand(); tg.ready();
+        
         const canvas = document.getElementById('starCanvas');
         const ctx = canvas.getContext('2d');
         const labelsContainer = document.getElementById('labels');
@@ -68,14 +69,32 @@
             "Интеллектуальная"
         ];
 
+        // 1. Инициализация DOM-элементов для подписей (один раз для оптимизации)
+        const labelElements = [];
+        for (let i = 0; i < 6; i++) {
+            const label = document.createElement('div');
+            label.className = 'sphere-label';
+            labelsContainer.appendChild(label);
+            labelElements.push(label);
+        }
+
+        // 2. Функция отрисовки одного кадра
         function drawStar(values) {
             const size = 340; canvas.width = size; canvas.height = size;
             const centerX = size/2; const centerY = size/2; 
             const maxR = 105; 
             const points = [];
-            labelsContainer.innerHTML = ''; 
+            
+            ctx.clearRect(0,0,size,size); 
+            
+            // Сетка
+            ctx.strokeStyle = 'rgba(90, 155, 213, 0.12)';
+            ctx.lineWidth = 1;
+            for(let j=1; j<=4; j++) {
+                ctx.beginPath(); ctx.arc(centerX, centerY, (maxR/4)*j, 0, Math.PI*2); ctx.stroke();
+            }
 
-            // 1. Собираем только 6 ключевых точек (без промежуточных "вмятин")
+            // Вычисляем координаты и обновляем текст
             for (let i = 0; i < 6; i++) {
                 const r = (values[i]/100) * maxR;
                 const a = (i * 60 - 90) * (Math.PI/180);
@@ -83,31 +102,19 @@
                 const y = centerY + r * Math.sin(a);
                 points.push({x, y});
 
-                // Отрисовка подписей
-                const label = document.createElement('div');
-                label.className = 'sphere-label';
-                const offset = 35; // чуть увеличил отступ для красоты
+                const offset = 35;
                 const lx = centerX + (r + offset) * Math.cos(a);
                 const ly = centerY + (r + offset) * Math.sin(a);
-                label.style.left = `${lx}px`;
-                label.style.top = `${ly}px`;
-                label.innerHTML = `${sphereNames[i]}<b>${values[i]}%</b>`;
-                labelsContainer.appendChild(label);
-            }
-            
-            ctx.clearRect(0,0,size,size); 
-            
-            // Сетка (круги на заднем фоне)
-            ctx.strokeStyle = 'rgba(90, 155, 213, 0.12)';
-            ctx.lineWidth = 1;
-            for(let j=1; j<=4; j++) {
-                ctx.beginPath(); ctx.arc(centerX, centerY, (maxR/4)*j, 0, Math.PI*2); ctx.stroke();
+                
+                labelElements[i].style.left = `${lx}px`;
+                labelElements[i].style.top = `${ly}px`;
+                // Округляем значения для красоты во время анимации
+                labelElements[i].innerHTML = `${sphereNames[i]}<b>${Math.round(values[i])}%</b>`;
             }
 
-            // 2. ОТРИСОВКА СИНХРОСФЕРЫ (Плавные кривые)
+            // Плавная отрисовка многоугольника
             if (points.length > 0) {
                 ctx.beginPath();
-                // Начинаем с середины между последней и первой точкой для бесшовности
                 const first = points[0];
                 const last = points[points.length - 1];
                 ctx.moveTo((first.x + last.x) / 2, (first.y + last.y) / 2);
@@ -117,18 +124,15 @@
                     const p1 = points[(i + 1) % points.length];
                     const midX = (p0.x + p1.x) / 2;
                     const midY = (p0.y + p1.y) / 2;
-                    // Используем квадратичную кривую: p0 становится точкой натяжения
                     ctx.quadraticCurveTo(p0.x, p0.y, midX, midY);
                 }
                 ctx.closePath();
 
-                // Обводка
                 ctx.strokeStyle = themeColor;
                 ctx.lineWidth = 2;
                 ctx.lineJoin = 'round';
                 ctx.stroke();
 
-                // Заливка
                 const grad = ctx.createRadialGradient(centerX, centerY, 0, centerX, centerY, maxR);
                 grad.addColorStop(0, themeColor + '60'); 
                 grad.addColorStop(1, themeColor + '20');
@@ -137,13 +141,52 @@
             }
         }
 
+        // 3. ЛОГИКА ПАМЯТИ И АНИМАЦИИ
+        
+        // Читаем НОВЫЕ данные из URL
         const urlParams = new URLSearchParams(window.location.search);
         const mParam = urlParams.get('m');
-        
-        // Твои "неправильные" дефолты (теперь они будут выглядеть как плавная капля)
-        let currentMetrics = mParam ? mParam.split(',').map(Number) : [80, 50, 30, 40, 75, 35];
-        
-        drawStar(currentMetrics);
+        const targetMetrics = mParam ? mParam.split(',').map(Number) : [80, 50, 30, 40, 75, 35];
+
+        // Читаем СТАРЫЕ данные из памяти телефона (если их нет - начинаем с ровного круга в 50%)
+        const savedState = localStorage.getItem('absolute_sync_state');
+        const oldMetrics = savedState ? JSON.parse(savedState) : [50, 50, 50, 50, 50, 50];
+
+        // Сразу сохраняем новые данные на будущее
+        localStorage.setItem('absolute_sync_state', JSON.stringify(targetMetrics));
+
+        // Настройки анимации (продолжительность 1.5 секунды)
+        const animationDuration = 1500;
+        let startTime = null;
+
+        // Плавное замедление (easeOutQuart)
+        function easeOut(t) {
+            return 1 - Math.pow(1 - t, 4);
+        }
+
+        // Цикл анимации
+        function animate(currentTime) {
+            if (!startTime) startTime = currentTime;
+            const elapsed = currentTime - startTime;
+            let progress = Math.min(elapsed / animationDuration, 1);
+            
+            const easedProgress = easeOut(progress);
+
+            // Высчитываем промежуточные значения для текущего кадра
+            const currentMetrics = oldMetrics.map((oldVal, i) => {
+                return oldVal + (targetMetrics[i] - oldVal) * easedProgress;
+            });
+
+            drawStar(currentMetrics);
+
+            // Если анимация не закончена - рисуем следующий кадр
+            if (progress < 1) {
+                requestAnimationFrame(animate);
+            }
+        }
+
+        // Запускаем магию
+        requestAnimationFrame(animate);
     </script>
 </body>
 </html>
