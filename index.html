@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>АБСОЛЮТ | ИНТЕРФЕЙС</title>
+    <title>АБСОЛЮТ | СИСТЕМА</title>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
@@ -11,14 +11,11 @@
         
         :root { 
             --accent: #4682B4; 
-            /* Сделали синий чуть ярче, чтобы он был заметен */
-            --bg-deep: #081221; 
+            --bg-deep: #050a14; 
             --bg-light: #0d1b2e;
         }
         
         body { 
-            background-color: var(--bg-deep); 
-            /* Градиент от центра к краям: в центре чуть светлее синий */
             background: radial-gradient(circle at center, var(--bg-light) 0%, var(--bg-deep) 100%);
             color: #fff; 
             font-family: 'Inter', sans-serif; 
@@ -41,7 +38,6 @@
 
         canvas { 
             filter: drop-shadow(0 0 30px var(--accent)); 
-            transition: filter 1s ease; 
         }
 
         .status-text { 
@@ -63,15 +59,14 @@
     <div class="film-grain"></div>
 
     <div id="main-ui" class="fade-in flex flex-col items-center z-10 text-center">
-        <h1 class="text-xl font-thin tracking-[0.7em] uppercase opacity-40 mb-1">СИСТЕМА АБСОЛЮТ</h1>
-        <div id="accent-line" class="h-[1px] w-24 shadow-[0_0_20px_var(--accent)] transition-all duration-[3000ms] mx-auto"></div>
+        <h1 class="text-xl font-light tracking-[0.8em] uppercase opacity-60 mb-1">СИСТЕМА АБСОЛЮТ</h1>
+        <div id="accent-line" class="h-[1px] w-32 shadow-[0_0_20px_var(--accent)] transition-all duration-[3000ms] mx-auto"></div>
         
         <canvas id="starCanvas" class="mt-12"></canvas>
         
         <div class="mt-16 flex flex-col items-center gap-8">
             <p id="status" class="status-text">Инициализация протоколов...</p>
-            
-            <button id="syncBtn" onclick="performSync()" class="px-10 py-4 text-[12px] tracking-[0.3em] uppercase hover:bg-white/5 active:scale-95 transition-all opacity-70">
+            <button id="syncBtn" onclick="performSync()" class="px-10 py-4 text-[12px] tracking-[0.3em] uppercase hover:bg-white/5 active:scale-95 transition-all opacity-80">
                 Подтвердить вход
             </button>
         </div>
@@ -100,13 +95,12 @@
                 gainNode.connect(audioCtx.destination);
                 oscillator.start();
                 oscillator.stop(audioCtx.currentTime + 0.12);
-            } catch (e) { console.log('Audio error'); }
+            } catch (e) { }
         }
 
         function initTheme() {
             const now = new Date();
-            // Суббота — теплый золотисто-янтарный
-            if (now.getDay() === 6) themeColor = '#D4A373'; 
+            if (now.getDay() === 6) themeColor = '#D4A373'; // Субботний янтарь
             document.documentElement.style.setProperty('--accent', themeColor);
             document.getElementById('accent-line').style.backgroundColor = themeColor;
         }
@@ -115,35 +109,25 @@
             const size = 320;
             canvas.width = size; canvas.height = size;
             const centerX = size / 2; const centerY = size / 2;
-            const maxR = 115;
+            const maxR = 110;
             const points = [];
-            
             for (let i = 0; i < 6; i++) {
-                const val = values[i] || 20;
+                const val = values[i] || 25;
                 const rPeak = (val / 100) * maxR;
                 const anglePeak = (i * 60 - 90) * (Math.PI / 180);
                 points.push({ x: centerX + rPeak * Math.cos(anglePeak), y: centerY + rPeak * Math.sin(anglePeak) });
-                const nextVal = values[(i + 1) % 6] || 20;
+                const nextVal = values[(i + 1) % 6] || 25;
                 const rDent = ((val + nextVal) / 200) * (maxR / Math.sqrt(3));
                 const angleDent = (i * 60 - 60) * (Math.PI / 180);
                 points.push({ x: centerX + rDent * Math.cos(angleDent), y: centerY + rDent * Math.sin(angleDent) });
             }
-
             ctx.clearRect(0, 0, size, size);
-            
-            // Мягкое свечение под звездой
-            const grad = ctx.createRadialGradient(centerX, centerY, 0, centerX, centerY, maxR * 1.3);
-            grad.addColorStop(0, themeColor + '15');
-            grad.addColorStop(1, 'transparent');
-            ctx.fillStyle = grad;
-            ctx.fillRect(0, 0, size, size);
-
             ctx.beginPath();
             ctx.moveTo(points[0].x, points[0].y);
             points.forEach(p => ctx.lineTo(p.x, p.y));
             ctx.closePath();
             ctx.strokeStyle = themeColor;
-            ctx.lineWidth = 1.8;
+            ctx.lineWidth = 2;
             ctx.stroke();
             ctx.fillStyle = themeColor + '1F';
             ctx.fill();
@@ -157,71 +141,14 @@
             status.innerText = "Синхронизация протоколов...";
             status.classList.add('animate-pulse');
             setTimeout(() => {
-                const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
-                tg.sendData(timezone);
+                tg.sendData(Intl.DateTimeFormat().resolvedOptions().timeZone);
                 status.innerText = "Доступ подтвержден";
                 setTimeout(() => tg.close(), 1200);
             }, 2000);
         }
 
         initTheme();
-        // Твоя уникальная "кривая" звезда
-        drawStar([70, 40, 85, 30, 50, 60]);
-    </script>
-</body>
-</html>
-
-                const nextVal = values[(i + 1) % 6] || 15;
-                const rDent = ((val + nextVal) / 200) * (maxR / Math.sqrt(3));
-                const angleDent = (i * 60 - 60) * (Math.PI / 180);
-                points.push({ x: centerX + rDent * Math.cos(angleDent), y: centerY + rDent * Math.sin(angleDent) });
-            }
-
-            ctx.clearRect(0, 0, size, size);
-            
-            // Свечение фона за звездой
-            const grad = ctx.createRadialGradient(centerX, centerY, 0, centerX, centerY, maxR * 1.5);
-            grad.addColorStop(0, themeColor + '10');
-            grad.addColorStop(1, 'transparent');
-            ctx.fillStyle = grad;
-            ctx.fillRect(0, 0, size, size);
-
-            // Отрисовка линий
-            ctx.beginPath();
-            ctx.moveTo(points[0].x, points[0].y);
-            points.forEach(p => ctx.lineTo(p.x, p.y));
-            ctx.closePath();
-            
-            ctx.strokeStyle = themeColor;
-            ctx.lineWidth = 1.5;
-            ctx.stroke();
-            
-            ctx.fillStyle = themeColor + '1A'; // 10% прозрачности
-            ctx.fill();
-        }
-
-        function performSync() {
-            playClickSound(); // Вызываем звук
-            
-            const btn = document.getElementById('syncBtn');
-            const status = document.getElementById('status');
-            
-            btn.style.display = 'none';
-            status.innerText = "Чтение биометрии...";
-            status.classList.add('animate-pulse');
-
-            setTimeout(() => {
-                const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
-                tg.sendData(timezone);
-                
-                status.innerText = "Синхронизация завершена";
-                setTimeout(() => tg.close(), 1000);
-            }, 1800);
-        }
-
-        initTheme();
-        // Твоя "кривая" звезда для демонстрации
-        drawStar([65, 30, 80, 25, 45, 50]);
+        drawStar([70, 45, 80, 30, 60, 55]);
     </script>
 </body>
 </html>
