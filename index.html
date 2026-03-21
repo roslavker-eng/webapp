@@ -51,7 +51,7 @@
         </div>
     </div>
 
-    <script>
+        <script>
         const tg = window.Telegram.WebApp;
         tg.expand(); tg.ready();
         
@@ -61,15 +61,10 @@
         const themeColor = '#5A9BD5';
 
         const sphereNames = [
-            "Духовно-психологическая",
-            "Социальная",
-            "Физическая",
-            "Сексуальная",
-            "Материальная",
-            "Интеллектуальная"
+            "Духовно-психологическая", "Социальная", "Физическая",
+            "Сексуальная", "Материальная", "Интеллектуальная"
         ];
 
-        // 1. Инициализация DOM-элементов для подписей (один раз для оптимизации)
         const labelElements = [];
         for (let i = 0; i < 6; i++) {
             const label = document.createElement('div');
@@ -78,13 +73,11 @@
             labelElements.push(label);
         }
 
-        // 2. Функция отрисовки одного кадра
         function drawStar(values) {
             const size = 340; canvas.width = size; canvas.height = size;
             const centerX = size/2; const centerY = size/2; 
             const maxR = 105; 
             const points = [];
-            
             ctx.clearRect(0,0,size,size); 
             
             // Сетка
@@ -94,115 +87,76 @@
                 ctx.beginPath(); ctx.arc(centerX, centerY, (maxR/4)*j, 0, Math.PI*2); ctx.stroke();
             }
 
-            // Вычисляем координаты и обновляем текст
             for (let i = 0; i < 6; i++) {
                 const r = (values[i]/100) * maxR;
                 const a = (i * 60 - 90) * (Math.PI/180);
                 const x = centerX + r * Math.cos(a);
                 const y = centerY + r * Math.sin(a);
                 points.push({x, y});
-
                 const offset = 35;
                 const lx = centerX + (r + offset) * Math.cos(a);
                 const ly = centerY + (r + offset) * Math.sin(a);
-                
                 labelElements[i].style.left = `${lx}px`;
                 labelElements[i].style.top = `${ly}px`;
-                // Округляем значения для красоты во время анимации
                 labelElements[i].innerHTML = `${sphereNames[i]}<b>${Math.round(values[i])}%</b>`;
             }
 
-            // Плавная отрисовка многоугольника
             if (points.length > 0) {
                 ctx.beginPath();
-                const first = points[0];
-                const last = points[points.length - 1];
+                const first = points[0]; const last = points[points.length - 1];
                 ctx.moveTo((first.x + last.x) / 2, (first.y + last.y) / 2);
-
                 for (let i = 0; i < points.length; i++) {
-                    const p0 = points[i];
-                    const p1 = points[(i + 1) % points.length];
-                    const midX = (p0.x + p1.x) / 2;
-                    const midY = (p0.y + p1.y) / 2;
+                    const p0 = points[i]; const p1 = points[(i + 1) % points.length];
+                    const midX = (p0.x + p1.x) / 2; const midY = (p0.y + p1.y) / 2;
                     ctx.quadraticCurveTo(p0.x, p0.y, midX, midY);
                 }
                 ctx.closePath();
-
-                ctx.strokeStyle = themeColor;
-                ctx.lineWidth = 2;
-                ctx.lineJoin = 'round';
-                ctx.stroke();
-
+                ctx.strokeStyle = themeColor; ctx.lineWidth = 2; ctx.stroke();
                 const grad = ctx.createRadialGradient(centerX, centerY, 0, centerX, centerY, maxR);
-                grad.addColorStop(0, themeColor + '60'); 
-                grad.addColorStop(1, themeColor + '20');
-                ctx.fillStyle = grad;
-                ctx.fill();
+                grad.addColorStop(0, themeColor + '60'); grad.addColorStop(1, themeColor + '20');
+                ctx.fillStyle = grad; ctx.fill();
             }
         }
 
-        // 3. ЛОГИКА ПАМЯТИ И АНИМАЦИИ
-        
-        // Читаем НОВЫЕ данные из URL
+        // --- ЛОГИКА С ЗАДЕРЖКОЙ ---
         const urlParams = new URLSearchParams(window.location.search);
         const mParam = urlParams.get('m');
-        const targetMetrics = mParam ? mParam.split(',').map(Number) : [80, 50, 30, 40, 75, 35];
+        const targetMetrics = mParam ? mParam.split(',').map(Number) : [50, 50, 50, 50, 50, 50];
 
-        // Читаем СТАРЫЕ данные из памяти телефона (если их нет - начинаем с ровного круга в 50%)
         const savedState = localStorage.getItem('absolute_sync_state');
         const oldMetrics = savedState ? JSON.parse(savedState) : [50, 50, 50, 50, 50, 50];
 
-        // Сразу сохраняем новые данные на будущее
+        // 1. РИСУЕМ СРАЗУ (старое состояние)
+        drawStar(oldMetrics);
+
+        // 2. СОХРАНЯЕМ НОВОЕ В ПАМЯТЬ
         localStorage.setItem('absolute_sync_state', JSON.stringify(targetMetrics));
 
-        // Настройки анимации (продолжительность 1.5 секунды)
         const animationDuration = 1500;
         let startTime = null;
 
-        // Плавное замедление (easeOutQuart)
-        function easeOut(t) {
-            return 1 - Math.pow(1 - t, 4);
-        }
+        function easeOut(t) { return 1 - Math.pow(1 - t, 4); }
 
-        // Цикл анимации
         function animate(currentTime) {
             if (!startTime) startTime = currentTime;
             const elapsed = currentTime - startTime;
             let progress = Math.min(elapsed / animationDuration, 1);
-            
             const easedProgress = easeOut(progress);
 
-            // Высчитываем промежуточные значения для текущего кадра
             const currentMetrics = oldMetrics.map((oldVal, i) => {
                 return oldVal + (targetMetrics[i] - oldVal) * easedProgress;
             });
 
             drawStar(currentMetrics);
-
-            // Если анимация не закончена - рисуем следующий кадр
-            if (progress < 1) {
-                requestAnimationFrame(animate);
-            }
+            if (progress < 1) requestAnimationFrame(animate);
         }
-        // ... (весь твой код анимации, easeOut, animate и т.д.) ...
 
-        // Находим эту строку в самом конце:
-        // requestAnimationFrame(animate); 
-
-        // И ЗАМЕНЯЕМ ЕЁ НА ЭТОТ БЛОК:
-        
-        // 3. ЗАПУСК МАГИИ С ЗАДЕРЖКОЙ
-        
-        // setTimeout позволяет выполнить функцию через определенное время.
-        // Мы ставим 1000 миллисекунд (1 секунда).
+        // 3. ЗАПУСКАЕМ ИЗМЕНЕНИЕ ЧЕРЕЗ 1 СЕКУНДУ
         setTimeout(() => {
-            // Как только секунда прошла, мы запускаем первый кадр анимации
             requestAnimationFrame(animate);
-            // Добавим лог, чтобы ты видел в консоли, когда пошел процесс
-            console.log("🚀 Анимация Синхросферы запущена после задержки в 1с");
-        }, 1000); 
+        }, 1000);
 
-    </script>
+        </script>
 </body>
 </html>
 
