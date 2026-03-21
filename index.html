@@ -17,48 +17,15 @@
         @keyframes fadeIn { 0% { opacity: 0; filter: blur(10px); } 100% { opacity: 1; filter: blur(0); } }
         canvas { filter: drop-shadow(0 0 20px var(--accent)); z-index: 5; }
         
-        /* Группа заголовков для идеальной центровки */
-        .header-group {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            width: 100%;
-            text-align: center;
-        }
-
-        .title-main {
-            font-size: 18px;
-            font-weight: 100;
-            line-height: 1;
-            letter-spacing: 0.8em;
-            text-transform: uppercase;
-            opacity: 0.9;
-            margin-bottom: 8px;
-            margin-right: -0.8em; /* Компенсация letter-spacing для центровки последнего символа */
-        }
-
-        .title-sub {
-            font-size: 9px;
-            letter-spacing: 0.35em;
-            color: rgba(255,255,255,0.4);
-            text-transform: uppercase;
-            margin-bottom: 12px;
-            margin-right: -0.35em; /* Аналогичная компенсация */
-        }
+        .header-group { display: flex; flex-direction: column; align-items: center; width: 100%; text-align: center; }
+        .title-main { font-size: 18px; font-weight: 100; line-height: 1; letter-spacing: 0.8em; text-transform: uppercase; opacity: 0.9; margin-bottom: 8px; margin-right: -0.8em; }
+        .title-sub { font-size: 9px; letter-spacing: 0.35em; color: rgba(255,255,255,0.4); text-transform: uppercase; margin-bottom: 12px; margin-right: -0.35em; }
 
         .sphere-label {
-            position: absolute;
-            font-size: 8px;
-            color: rgba(255,255,255,0.7);
-            text-transform: uppercase;
-            letter-spacing: 0.1em;
-            text-align: center;
-            pointer-events: none;
-            white-space: nowrap;
-            transform: translate(-50%, -50%);
-            transition: all 0.6s cubic-bezier(0.34, 1.56, 0.64, 1);
-            z-index: 10;
-            line-height: 1.2;
+            position: absolute; font-size: 8px; color: rgba(255,255,255,0.7);
+            text-transform: uppercase; letter-spacing: 0.1em; text-align: center;
+            pointer-events: none; white-space: nowrap; transform: translate(-50%, -50%);
+            transition: all 0.8s cubic-bezier(0.34, 1.56, 0.64, 1); z-index: 10; line-height: 1.2;
         }
         .sphere-label b { color: var(--accent); font-size: 10px; display: block; margin-top: 2px; font-weight: 400; }
     </style>
@@ -105,25 +72,21 @@
             const size = 340; canvas.width = size; canvas.height = size;
             const centerX = size/2; const centerY = size/2; 
             const maxR = 105; 
-
             const points = [];
             labelsContainer.innerHTML = ''; 
 
             for (let i = 0; i < 6; i++) {
                 const r = (values[i]/100) * maxR;
                 const a = (i * 60 - 90) * (Math.PI/180);
-                
                 const x = centerX + r * Math.cos(a);
                 const y = centerY + r * Math.sin(a);
                 points.push({x, y});
 
                 const label = document.createElement('div');
                 label.className = 'sphere-label';
-                
                 const offset = 30; 
                 const lx = centerX + (r + offset) * Math.cos(a);
                 const ly = centerY + (r + offset) * Math.sin(a);
-                
                 label.style.left = `${lx}px`;
                 label.style.top = `${ly}px`;
                 label.innerHTML = `${sphereNames[i]}<b>${values[i]}%</b>`;
@@ -140,18 +103,24 @@
             for(let j=1; j<=4; j++) {
                 ctx.beginPath(); ctx.arc(centerX, centerY, (maxR/4)*j, 0, Math.PI*2); ctx.stroke();
             }
-
             ctx.beginPath(); ctx.moveTo(points[0].x, points[0].y);
             points.forEach(p => ctx.lineTo(p.x, p.y)); ctx.closePath();
-            
             ctx.strokeStyle = themeColor; ctx.lineWidth = 2; ctx.stroke();
             const grad = ctx.createRadialGradient(centerX, centerY, 0, centerX, centerY, maxR);
             grad.addColorStop(0, themeColor + '50'); grad.addColorStop(1, themeColor + '10');
             ctx.fillStyle = grad; ctx.fill();
         }
 
-        // Рандомные данные для теста
-        drawStar([85, 45, 95, 75, 55, 80]);
+        // --- ЛОГИКА ПОЛУЧЕНИЯ ДАННЫХ ИЗ URL ---
+        const urlParams = new URLSearchParams(window.location.search);
+        const mParam = urlParams.get('m');
+        
+        // Если бот прислал цифры (через ?m=80,60,70...), используем их. 
+        // Если нет — ставим дефолтные 50%.
+        let currentMetrics = mParam ? mParam.split(',').map(Number) : [50, 50, 50, 50, 50, 50];
+        
+        // Рисуем звезду с реальными данными
+        drawStar(currentMetrics);
     </script>
 </body>
 </html>
