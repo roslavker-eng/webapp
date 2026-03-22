@@ -44,17 +44,17 @@
             <div id="labels"></div>
         </div>
         
-        <div class="mt-14">
-            <button onclick="sendDataAndClose()" class="backdrop-blur-md bg-white/5 border border-white/20 px-10 py-3 text-[10px] tracking-[0.2em] uppercase active:scale-95 transition-all">
-    ЗАКРЫТЬ
+        <div class="mt-14 relative z-50">
+            <button onclick="sendDataAndClose()" class="cursor-pointer backdrop-blur-md bg-white/5 border border-white/20 px-10 py-3 text-[10px] tracking-[0.2em] uppercase active:scale-95 transition-all">
+                ЗАКРЫТЬ
             </button>
-            
         </div>
     </div>
 
-        <script>
+    <script>
         const tg = window.Telegram.WebApp;
-        tg.expand(); tg.ready();
+        tg.expand(); 
+        tg.ready();
         
         const canvas = document.getElementById('starCanvas');
         const ctx = canvas.getContext('2d');
@@ -119,7 +119,6 @@
             }
         }
 
-        // --- ЛОГИКА С ЗАДЕРЖКОЙ ---
         const urlParams = new URLSearchParams(window.location.search);
         const mParam = urlParams.get('m');
         const targetMetrics = mParam ? mParam.split(',').map(Number) : [50, 50, 50, 50, 50, 50];
@@ -127,10 +126,7 @@
         const savedState = localStorage.getItem('absolute_sync_state');
         const oldMetrics = savedState ? JSON.parse(savedState) : [50, 50, 50, 50, 50, 50];
 
-        // 1. РИСУЕМ СРАЗУ (старое состояние)
         drawStar(oldMetrics);
-
-        // 2. СОХРАНЯЕМ НОВОЕ В ПАМЯТЬ
         localStorage.setItem('absolute_sync_state', JSON.stringify(targetMetrics));
 
         const animationDuration = 3000;
@@ -152,29 +148,29 @@
             if (progress < 1) requestAnimationFrame(animate);
         }
 
-        // 3. ЗАПУСКАЕМ ИЗМЕНЕНИЕ ЧЕРЕЗ 1 СЕКУНДУ
         setTimeout(() => {
             requestAnimationFrame(animate);
         }, 1000);
 
-function sendDataAndClose() {
-    try {
-        // 1. Получаем часовой пояс (например: "Europe/Moscow" или "Asia/Jerusalem")
-        const tz = Intl.DateTimeFormat().resolvedOptions().timeZone;
-        
-        // 2. Отправляем данные боту
-        // Это автоматически закроет WebApp и отправит сообщение в чат
-        tg.sendData(tz);
-    } catch (e) {
-        // Если что-то пошло не так, просто закрываем
-        tg.close();
-    }
-}
-            
-        </script>
+        // ИСПРАВЛЕНИЕ: Усиленная функция закрытия
+        function sendDataAndClose() {
+            try {
+                // 1. Получаем часовой пояс
+                const tz = Intl.DateTimeFormat().resolvedOptions().timeZone;
+                
+                // 2. Отправляем JSON-строку (engine.py умеет её парсить)
+                const data = JSON.stringify({ "timezone": tz });
+                tg.sendData(data);
+
+                // 3. Резервное принудительное закрытие, если sendData не сработал мгновенно
+                setTimeout(() => {
+                    tg.close();
+                }, 150);
+            } catch (e) {
+                console.error("WebApp Error:", e);
+                tg.close();
+            }
+        }
+    </script>
 </body>
 </html>
-
-    
-
-
