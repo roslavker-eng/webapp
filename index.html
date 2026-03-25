@@ -152,20 +152,17 @@
             requestAnimationFrame(animate);
         }, 1000);
 
-        // ИСПРАВЛЕНИЕ: Усиленная функция закрытия
+        // ОБНОВЛЕННАЯ ФУНКЦИЯ: Работает с кнопкой Меню
         function sendDataAndClose() {
             try {
-                // 1. Получаем часовой пояс
-                const tz = Intl.DateTimeFormat().resolvedOptions().timeZone;
-                
-                // 2. Отправляем JSON-строку (engine.py умеет её парсить)
-                const data = JSON.stringify({ "timezone": tz });
-                tg.sendData(data);
+                // 1. Команда для бота через Deep Link (замени юзернейм если нужно)
+                const botUsername = "etalon_bot"; 
+                tg.openTelegramLink(`https://t.me/${botUsername}?start=sync_done`);
 
-                // 3. Резервное принудительное закрытие, если sendData не сработал мгновенно
+                // 2. Закрываем окно приложения
                 setTimeout(() => {
                     tg.close();
-                }, 150);
+                }, 100);
             } catch (e) {
                 console.error("WebApp Error:", e);
                 tg.close();
