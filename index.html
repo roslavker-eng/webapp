@@ -121,8 +121,8 @@
 
         const urlParams = new URLSearchParams(window.location.search);
         const mParam = urlParams.get('m');
-        const targetMetrics = mParam ? mParam.split(',').map(Number) : [50, 50, 50, 50, 50, 50];
-
+        const targetMetrics = mParam ? mParam.replace(/[\[\]\s]/g, '').split(',').map(Number) : [50, 50, 50, 50, 50, 50];
+        
         const savedState = localStorage.getItem('absolute_sync_state');
         const oldMetrics = savedState ? JSON.parse(savedState) : [50, 50, 50, 50, 50, 50];
 
