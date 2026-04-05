@@ -67,12 +67,11 @@
         function drawStar(values) {
             const size = 340; canvas.width = size; canvas.height = size;
             const centerX = size/2; const centerY = size/2; 
-            const minR = 35; // Смещение от центра (Мертвая зона)
-            const maxR = 105; // Внешний радиус
+            const minR = 35; 
+            const maxR = 105; 
             const points = [];
             ctx.clearRect(0,0,size,size); 
             
-            // 1. Отрисовка Сетки (Синхронизирована с minR)
             ctx.strokeStyle = 'rgba(90, 155, 213, 0.12)';
             ctx.lineWidth = 1;
             for(let j=0; j<=3; j++) {
@@ -80,7 +79,6 @@
                 ctx.beginPath(); ctx.arc(centerX, centerY, gridR, 0, Math.PI*2); ctx.stroke();
             }
 
-            // 2. Вычисление Точек
             for (let i = 0; i < 6; i++) {
                 const r = minR + (values[i]/100) * (maxR - minR);
                 const a = (i * 60 - 90) * (Math.PI/180);
@@ -95,7 +93,6 @@
                 labelElements[i].innerHTML = `${sphereNames[i]}<b>${Math.round(values[i])}%</b>`;
             }
 
-            // 3. Рисование Фигуры
             if (points.length > 0) {
                 ctx.beginPath();
                 const first = points[0]; const last = points[points.length - 1];
@@ -122,21 +119,25 @@
         drawStar(oldMetrics);
         localStorage.setItem('absolute_sync_state', JSON.stringify(targetMetrics));
 
-        const animationDuration = 2000; 
+        // ПАРАМЕТРЫ ИНЕРЦИИ
+        const animationDuration = 2200; 
         let startTime = null;
 
-        function easeOutElastic(x) {
-            const c4 = (2 * Math.PI) / 1.5; 
-            return x === 0 ? 0 : x === 1 ? 1 : Math.pow(2, -6 * x) * Math.sin((x * 10 - 0.75) * c4) + 1;
+        // Вязкое замедление (Quartic Out)
+        function easeOutQuart(x) {
+            return 1 - Math.pow(1 - x, 4);
         }
 
         function animate(currentTime) {
             if (!startTime) startTime = currentTime;
             const elapsed = currentTime - startTime;
             let progress = Math.min(elapsed / animationDuration, 1);
-            const easedProgress = easeOutElastic(progress);
+            
+            const easedProgress = easeOutQuart(progress);
             const currentMetrics = oldMetrics.map((oldVal, i) => oldVal + (targetMetrics[i] - oldVal) * easedProgress);
+            
             drawStar(currentMetrics);
+            
             if (progress < 1) requestAnimationFrame(animate);
             else drawStar(targetMetrics);
         }
@@ -153,4 +154,3 @@
     </script>
 </body>
 </html>
-
