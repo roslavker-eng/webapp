@@ -25,14 +25,9 @@
             position: absolute; font-size: 8px; color: rgba(255,255,255,0.7);
             text-transform: uppercase; letter-spacing: 0.1em; text-align: center;
             pointer-events: none; white-space: nowrap; transform: translate(-50%, -50%);
-            z-index: 10; line-height: 1.2; transition: all 0.2s;
+            z-index: 10; line-height: 1.2;
         }
         .sphere-label b { color: var(--accent); font-size: 10px; display: block; margin-top: 2px; font-weight: 400; }
-        
-        /* Класс для вспышки измененного текста */
-        .highlight-text { color: #fff !important; text-shadow: 0 0 8px rgba(255,255,255,0.8); }
-        .highlight-text b { color: #fff !important; }
-        .delta-badge { font-size: 9px; color: #fff; font-weight: 300; margin-left: 2px; }
     </style>
 </head>
 <body class="flex flex-col items-center justify-center min-h-screen">
@@ -79,8 +74,7 @@
             labelElements.push(label);
         }
 
-        // Добавили flashAlpha для эффекта вспышки
-        function drawStar(values, flashAlpha = 0) {
+        function drawStar(values) {
             const size = 340; canvas.width = size; canvas.height = size;
             const centerX = size/2; const centerY = size/2; 
             const maxR = 105; 
@@ -108,24 +102,7 @@
                 const ly = centerY + (r + offset) * Math.sin(a);
                 labelElements[i].style.left = `${lx}px`;
                 labelElements[i].style.top = `${ly}px`;
-
-                // Логика вспышки дельты (разницы)
-                const delta = targetMetrics[i] - oldMetrics[i];
-                const hasChanged = Math.abs(delta) >= 1; // Если изменилось хотя бы на 1%
-                
-                let labelHtml = `${sphereNames[i]}<b>${Math.round(values[i])}%</b>`;
-                
-                if (hasChanged && flashAlpha > 0.05) {
-                    const sign = delta > 0 ? '+' : '';
-                    labelElements[i].classList.add('highlight-text');
-                    labelElements[i].style.opacity = 0.5 + (flashAlpha * 0.5);
-                    labelHtml = `${sphereNames[i]}<b>${Math.round(values[i])}% <span class="delta-badge">(${sign}${Math.round(delta)}%)</span></b>`;
-                } else {
-                    labelElements[i].classList.remove('highlight-text');
-                    labelElements[i].style.opacity = 1;
-                }
-                
-                labelElements[i].innerHTML = labelHtml;
+                labelElements[i].innerHTML = `${sphereNames[i]}<b>${Math.round(values[i])}%</b>`;
             }
 
             // Рисуем фигуру
@@ -144,22 +121,6 @@
                 grad.addColorStop(0, themeColor + '60'); grad.addColorStop(1, themeColor + '20');
                 ctx.fillStyle = grad; ctx.fill();
             }
-
-            // Рисуем светящиеся точки (узлы) поверх фигуры для измененных метрик
-            if (flashAlpha > 0) {
-                for (let i = 0; i < 6; i++) {
-                    const delta = targetMetrics[i] - oldMetrics[i];
-                    if (Math.abs(delta) >= 1) {
-                        ctx.beginPath();
-                        ctx.arc(points[i].x, points[i].y, 3 + (3 * flashAlpha), 0, Math.PI * 2);
-                        ctx.fillStyle = `rgba(255, 255, 255, ${flashAlpha})`;
-                        ctx.shadowColor = '#fff';
-                        ctx.shadowBlur = 15 * flashAlpha;
-                        ctx.fill();
-                        ctx.shadowBlur = 0; // сброс тени
-                    }
-                }
-            }
         }
 
         const urlParams = new URLSearchParams(window.location.search);
@@ -172,10 +133,10 @@
         drawStar(oldMetrics);
         localStorage.setItem('absolute_sync_state', JSON.stringify(targetMetrics));
 
-        const animationDuration = 2500; // Оптимальная длина для пружины
+        const animationDuration = 2000; 
         let startTime = null;
 
-        // МАТЕМАТИКА 1: Эффект пружины (Elastic Easing)
+        // МАТЕМАТИКА: Эффект пружины (Elastic Easing)
         function easeOutElastic(x) {
             const c4 = (2 * Math.PI) / 3;
             return x === 0 ? 0 : x === 1 ? 1 : Math.pow(2, -10 * x) * Math.sin((x * 10 - 0.75) * c4) + 1;
@@ -189,31 +150,23 @@
             // Применяем пружину к движению
             const easedProgress = easeOutElastic(progress);
 
-            // МАТЕМАТИКА 2: Управление вспышкой (появляется и плавно гаснет)
-            let flashAlpha = 0;
-            if (progress < 0.3) {
-                flashAlpha = progress / 0.3; // Разгорается
-            } else {
-                flashAlpha = 1 - ((progress - 0.3) / 0.7); // Медленно гаснет
-            }
-
             const currentMetrics = oldMetrics.map((oldVal, i) => {
                 return oldVal + (targetMetrics[i] - oldVal) * easedProgress;
             });
 
-            drawStar(currentMetrics, flashAlpha);
+            drawStar(currentMetrics);
             
             if (progress < 1) {
                 requestAnimationFrame(animate);
             } else {
-                // Гарантируем чистое финальное состояние без вспышек
-                drawStar(targetMetrics, 0); 
+                // Точная финальная позиция
+                drawStar(targetMetrics); 
             }
         }
 
         setTimeout(() => {
             requestAnimationFrame(animate);
-        }, 800); // Чуть быстрее запускаем анимацию после открытия
+        }, 800); 
 
         function sendDataAndClose() {
             try {
