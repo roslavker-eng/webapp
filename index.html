@@ -67,11 +67,12 @@
         function drawStar(values) {
             const size = 340; canvas.width = size; canvas.height = size;
             const centerX = size/2; const centerY = size/2; 
-            const minR = 35; 
+            const minR = 35; // Мертвая зона
             const maxR = 105; 
             const points = [];
             ctx.clearRect(0,0,size,size); 
             
+            // Сетка
             ctx.strokeStyle = 'rgba(90, 155, 213, 0.12)';
             ctx.lineWidth = 1;
             for(let j=0; j<=3; j++) {
@@ -79,6 +80,7 @@
                 ctx.beginPath(); ctx.arc(centerX, centerY, gridR, 0, Math.PI*2); ctx.stroke();
             }
 
+            // Точки
             for (let i = 0; i < 6; i++) {
                 const r = minR + (values[i]/100) * (maxR - minR);
                 const a = (i * 60 - 90) * (Math.PI/180);
@@ -93,6 +95,7 @@
                 labelElements[i].innerHTML = `${sphereNames[i]}<b>${Math.round(values[i])}%</b>`;
             }
 
+            // Фигура
             if (points.length > 0) {
                 ctx.beginPath();
                 const first = points[0]; const last = points[points.length - 1];
@@ -119,22 +122,31 @@
         drawStar(oldMetrics);
         localStorage.setItem('absolute_sync_state', JSON.stringify(targetMetrics));
 
-        // ПАРАМЕТРЫ ИНЕРЦИИ
-        const animationDuration = 2200; 
+        // ПАРАМЕТРЫ ПУЛЬСИРУЮЩЕЙ АНИМАЦИИ
+        const animationDuration = 3200; // Увеличено для красоты возврата
         let startTime = null;
-
-        // Вязкое замедление (Quartic Out)
-        function easeOutQuart(x) {
-            return 1 - Math.pow(1 - x, 4);
-        }
 
         function animate(currentTime) {
             if (!startTime) startTime = currentTime;
             const elapsed = currentTime - startTime;
             let progress = Math.min(elapsed / animationDuration, 1);
             
-            const easedProgress = easeOutQuart(progress);
-            const currentMetrics = oldMetrics.map((oldVal, i) => oldVal + (targetMetrics[i] - oldVal) * easedProgress);
+            const currentMetrics = targetMetrics.map((targetVal, i) => {
+                const startVal = oldMetrics[i];
+                
+                // ЭТАП 1: Взлет до 100% (первые 25% времени)
+                if (progress < 0.25) {
+                    const p = progress / 0.25;
+                    const easeIn = p * p; // Ускорение
+                    return startVal + (100 - startVal) * easeIn;
+                } 
+                // ЭТАП 2: Медленный возврат к таргету (оставшиеся 75% времени)
+                else {
+                    const p = (progress - 0.25) / 0.75;
+                    const easeOut = 1 - Math.pow(1 - p, 4); // Плавное вязкое замедление
+                    return 100 - (100 - targetVal) * easeOut;
+                }
+            });
             
             drawStar(currentMetrics);
             
