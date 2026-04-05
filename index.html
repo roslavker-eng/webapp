@@ -32,40 +32,30 @@
 </head>
 <body class="flex flex-col items-center justify-center min-h-screen">
     <div id="main-ui" class="fade-in flex flex-col items-center z-10 w-full relative">
-        
         <div class="header-group">
             <h1 class="title-main">СИНХРОСФЕРА</h1>
             <p class="title-sub">Система 6 Сфер</p>
             <div class="h-[1px] w-24 bg-[var(--accent)] opacity-30"></div>
         </div>
-        
         <div id="starContainer" class="relative mt-12 w-[340px] h-[340px] flex items-center justify-center">
             <canvas id="starCanvas"></canvas>
             <div id="labels"></div>
         </div>
-        
         <div class="mt-14 relative z-50">
-            <button onclick="sendDataAndClose()" class="cursor-pointer backdrop-blur-md bg-white/5 border border-white/20 px-10 py-3 text-[10px] tracking-[0.2em] uppercase active:scale-95 transition-all">
-                ЗАКРЫТЬ
-            </button>
+            <button onclick="sendDataAndClose()" class="cursor-pointer backdrop-blur-md bg-white/5 border border-white/20 px-10 py-3 text-[10px] tracking-[0.2em] uppercase active:scale-95 transition-all">ЗАКРЫТЬ</button>
         </div>
     </div>
 
     <script>
         const tg = window.Telegram.WebApp;
-        tg.expand(); 
-        tg.ready();
+        tg.expand(); tg.ready();
         
         const canvas = document.getElementById('starCanvas');
         const ctx = canvas.getContext('2d');
         const labelsContainer = document.getElementById('labels');
         const themeColor = '#5A9BD5';
 
-        const sphereNames = [
-            "Духовно-психологическая", "Социальная", "Физическая",
-            "Сексуальная", "Материальная", "Интеллектуальная"
-        ];
-
+        const sphereNames = ["Духовно-психологическая", "Социальная", "Физическая", "Сексуальная", "Материальная", "Интеллектуальная"];
         const labelElements = [];
         for (let i = 0; i < 6; i++) {
             const label = document.createElement('div');
@@ -77,35 +67,35 @@
         function drawStar(values) {
             const size = 340; canvas.width = size; canvas.height = size;
             const centerX = size/2; const centerY = size/2; 
-            const maxR = 105; 
+            const minR = 35; // Смещение от центра (Мертвая зона)
+            const maxR = 105; // Внешний радиус
             const points = [];
             ctx.clearRect(0,0,size,size); 
             
-            // Сетка
+            // 1. Отрисовка Сетки (Синхронизирована с minR)
             ctx.strokeStyle = 'rgba(90, 155, 213, 0.12)';
             ctx.lineWidth = 1;
-            for(let j=1; j<=4; j++) {
-                ctx.beginPath(); ctx.arc(centerX, centerY, (maxR/4)*j, 0, Math.PI*2); ctx.stroke();
+            for(let j=0; j<=3; j++) {
+                const gridR = minR + (j/3) * (maxR - minR);
+                ctx.beginPath(); ctx.arc(centerX, centerY, gridR, 0, Math.PI*2); ctx.stroke();
             }
 
-            // Вычисляем точки
+            // 2. Вычисление Точек
             for (let i = 0; i < 6; i++) {
-                const r = (values[i]/100) * maxR;
+                const r = minR + (values[i]/100) * (maxR - minR);
                 const a = (i * 60 - 90) * (Math.PI/180);
                 const x = centerX + r * Math.cos(a);
                 const y = centerY + r * Math.sin(a);
                 points.push({x, y});
                 
-                // Расположение текста
-                const offset = 35;
-                const lx = centerX + (r + offset) * Math.cos(a);
-                const ly = centerY + (r + offset) * Math.sin(a);
+                const lx = centerX + (r + 35) * Math.cos(a);
+                const ly = centerY + (r + 35) * Math.sin(a);
                 labelElements[i].style.left = `${lx}px`;
                 labelElements[i].style.top = `${ly}px`;
                 labelElements[i].innerHTML = `${sphereNames[i]}<b>${Math.round(values[i])}%</b>`;
             }
 
-            // Рисуем фигуру
+            // 3. Рисование Фигуры
             if (points.length > 0) {
                 ctx.beginPath();
                 const first = points[0]; const last = points[points.length - 1];
@@ -117,8 +107,8 @@
                 }
                 ctx.closePath();
                 ctx.strokeStyle = themeColor; ctx.lineWidth = 2; ctx.stroke();
-                const grad = ctx.createRadialGradient(centerX, centerY, 0, centerX, centerY, maxR);
-                grad.addColorStop(0, themeColor + '60'); grad.addColorStop(1, themeColor + '20');
+                const grad = ctx.createRadialGradient(centerX, centerY, minR, centerX, centerY, maxR);
+                grad.addColorStop(0, themeColor + '80'); grad.addColorStop(1, themeColor + '10');
                 ctx.fillStyle = grad; ctx.fill();
             }
         }
@@ -126,58 +116,41 @@
         const urlParams = new URLSearchParams(window.location.search);
         const mParam = urlParams.get('m');
         const targetMetrics = mParam ? mParam.replace(/[\[\]\s]/g, '').split(',').map(Number) : [50, 50, 50, 50, 50, 50];
-        
         const savedState = localStorage.getItem('absolute_sync_state');
         const oldMetrics = savedState ? JSON.parse(savedState) : [50, 50, 50, 50, 50, 50];
 
         drawStar(oldMetrics);
         localStorage.setItem('absolute_sync_state', JSON.stringify(targetMetrics));
 
-        const animationDuration = 2500; 
+        const animationDuration = 2000; 
         let startTime = null;
 
-        // МАТЕМАТИКА: Усиленный эффект пружины (Hyper Elastic Easing)
         function easeOutElastic(x) {
-            const c4 = (2 * Math.PI) / 1.5; // Было 3, стало 1.5 (больше колебаний)
-            return x === 0 ? 0 : x === 1 ? 1 : Math.pow(2, -7 * x) * Math.sin((x * 10 - 0.75) * c4) + 1; // Было -10, стало -7 (больше амплитуда)
+            const c4 = (2 * Math.PI) / 1.5; 
+            return x === 0 ? 0 : x === 1 ? 1 : Math.pow(2, -6 * x) * Math.sin((x * 10 - 0.75) * c4) + 1;
         }
 
         function animate(currentTime) {
             if (!startTime) startTime = currentTime;
             const elapsed = currentTime - startTime;
             let progress = Math.min(elapsed / animationDuration, 1);
-            
-            // Применяем пружину к движению
             const easedProgress = easeOutElastic(progress);
-
-            const currentMetrics = oldMetrics.map((oldVal, i) => {
-                return oldVal + (targetMetrics[i] - oldVal) * easedProgress;
-            });
-
+            const currentMetrics = oldMetrics.map((oldVal, i) => oldVal + (targetMetrics[i] - oldVal) * easedProgress);
             drawStar(currentMetrics);
-            
-            if (progress < 1) {
-                requestAnimationFrame(animate);
-            } else {
-                // Точная финальная позиция
-                drawStar(targetMetrics); 
-            }
+            if (progress < 1) requestAnimationFrame(animate);
+            else drawStar(targetMetrics);
         }
 
-        setTimeout(() => {
-            requestAnimationFrame(animate);
-        }, 800); 
+        setTimeout(() => { requestAnimationFrame(animate); }, 800);
 
         function sendDataAndClose() {
             try {
                 const botUsername = "Absolute_Personal_Assistant_bot"; 
                 tg.openTelegramLink(`https://t.me/${botUsername}?start=sync_done`);
                 setTimeout(() => { tg.close(); }, 100);
-            } catch (e) {
-                console.error("WebApp Error:", e);
-                tg.close();
-            }
+            } catch (e) { tg.close(); }
         }
     </script>
 </body>
 </html>
+
