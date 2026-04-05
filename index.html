@@ -25,9 +25,14 @@
             position: absolute; font-size: 8px; color: rgba(255,255,255,0.7);
             text-transform: uppercase; letter-spacing: 0.1em; text-align: center;
             pointer-events: none; white-space: nowrap; transform: translate(-50%, -50%);
-            z-index: 10; line-height: 1.2;
+            z-index: 10; line-height: 1.2; transition: all 0.2s;
         }
         .sphere-label b { color: var(--accent); font-size: 10px; display: block; margin-top: 2px; font-weight: 400; }
+        
+        /* Класс для вспышки измененного текста */
+        .highlight-text { color: #fff !important; text-shadow: 0 0 8px rgba(255,255,255,0.8); }
+        .highlight-text b { color: #fff !important; }
+        .delta-badge { font-size: 9px; color: #fff; font-weight: 300; margin-left: 2px; }
     </style>
 </head>
 <body class="flex flex-col items-center justify-center min-h-screen">
@@ -74,7 +79,8 @@
             labelElements.push(label);
         }
 
-        function drawStar(values) {
+        // Добавили flashAlpha для эффекта вспышки
+        function drawStar(values, flashAlpha = 0) {
             const size = 340; canvas.width = size; canvas.height = size;
             const centerX = size/2; const centerY = size/2; 
             const maxR = 105; 
@@ -88,20 +94,41 @@
                 ctx.beginPath(); ctx.arc(centerX, centerY, (maxR/4)*j, 0, Math.PI*2); ctx.stroke();
             }
 
+            // Вычисляем точки
             for (let i = 0; i < 6; i++) {
                 const r = (values[i]/100) * maxR;
                 const a = (i * 60 - 90) * (Math.PI/180);
                 const x = centerX + r * Math.cos(a);
                 const y = centerY + r * Math.sin(a);
                 points.push({x, y});
+                
+                // Расположение текста
                 const offset = 35;
                 const lx = centerX + (r + offset) * Math.cos(a);
                 const ly = centerY + (r + offset) * Math.sin(a);
                 labelElements[i].style.left = `${lx}px`;
                 labelElements[i].style.top = `${ly}px`;
-                labelElements[i].innerHTML = `${sphereNames[i]}<b>${Math.round(values[i])}%</b>`;
+
+                // Логика вспышки дельты (разницы)
+                const delta = targetMetrics[i] - oldMetrics[i];
+                const hasChanged = Math.abs(delta) >= 1; // Если изменилось хотя бы на 1%
+                
+                let labelHtml = `${sphereNames[i]}<b>${Math.round(values[i])}%</b>`;
+                
+                if (hasChanged && flashAlpha > 0.05) {
+                    const sign = delta > 0 ? '+' : '';
+                    labelElements[i].classList.add('highlight-text');
+                    labelElements[i].style.opacity = 0.5 + (flashAlpha * 0.5);
+                    labelHtml = `${sphereNames[i]}<b>${Math.round(values[i])}% <span class="delta-badge">(${sign}${Math.round(delta)}%)</span></b>`;
+                } else {
+                    labelElements[i].classList.remove('highlight-text');
+                    labelElements[i].style.opacity = 1;
+                }
+                
+                labelElements[i].innerHTML = labelHtml;
             }
 
+            // Рисуем фигуру
             if (points.length > 0) {
                 ctx.beginPath();
                 const first = points[0]; const last = points[points.length - 1];
@@ -117,6 +144,22 @@
                 grad.addColorStop(0, themeColor + '60'); grad.addColorStop(1, themeColor + '20');
                 ctx.fillStyle = grad; ctx.fill();
             }
+
+            // Рисуем светящиеся точки (узлы) поверх фигуры для измененных метрик
+            if (flashAlpha > 0) {
+                for (let i = 0; i < 6; i++) {
+                    const delta = targetMetrics[i] - oldMetrics[i];
+                    if (Math.abs(delta) >= 1) {
+                        ctx.beginPath();
+                        ctx.arc(points[i].x, points[i].y, 3 + (3 * flashAlpha), 0, Math.PI * 2);
+                        ctx.fillStyle = `rgba(255, 255, 255, ${flashAlpha})`;
+                        ctx.shadowColor = '#fff';
+                        ctx.shadowBlur = 15 * flashAlpha;
+                        ctx.fill();
+                        ctx.shadowBlur = 0; // сброс тени
+                    }
+                }
+            }
         }
 
         const urlParams = new URLSearchParams(window.location.search);
@@ -129,40 +172,54 @@
         drawStar(oldMetrics);
         localStorage.setItem('absolute_sync_state', JSON.stringify(targetMetrics));
 
-        const animationDuration = 3000;
+        const animationDuration = 2500; // Оптимальная длина для пружины
         let startTime = null;
 
-        function easeOut(t) { return 1 - Math.pow(1 - t, 4); }
+        // МАТЕМАТИКА 1: Эффект пружины (Elastic Easing)
+        function easeOutElastic(x) {
+            const c4 = (2 * Math.PI) / 3;
+            return x === 0 ? 0 : x === 1 ? 1 : Math.pow(2, -10 * x) * Math.sin((x * 10 - 0.75) * c4) + 1;
+        }
 
         function animate(currentTime) {
             if (!startTime) startTime = currentTime;
             const elapsed = currentTime - startTime;
             let progress = Math.min(elapsed / animationDuration, 1);
-            const easedProgress = easeOut(progress);
+            
+            // Применяем пружину к движению
+            const easedProgress = easeOutElastic(progress);
+
+            // МАТЕМАТИКА 2: Управление вспышкой (появляется и плавно гаснет)
+            let flashAlpha = 0;
+            if (progress < 0.3) {
+                flashAlpha = progress / 0.3; // Разгорается
+            } else {
+                flashAlpha = 1 - ((progress - 0.3) / 0.7); // Медленно гаснет
+            }
 
             const currentMetrics = oldMetrics.map((oldVal, i) => {
                 return oldVal + (targetMetrics[i] - oldVal) * easedProgress;
             });
 
-            drawStar(currentMetrics);
-            if (progress < 1) requestAnimationFrame(animate);
+            drawStar(currentMetrics, flashAlpha);
+            
+            if (progress < 1) {
+                requestAnimationFrame(animate);
+            } else {
+                // Гарантируем чистое финальное состояние без вспышек
+                drawStar(targetMetrics, 0); 
+            }
         }
 
         setTimeout(() => {
             requestAnimationFrame(animate);
-        }, 1000);
+        }, 800); // Чуть быстрее запускаем анимацию после открытия
 
-        // ОБНОВЛЕННАЯ ФУНКЦИЯ: Работает с кнопкой Меню
         function sendDataAndClose() {
             try {
-                // 1. Команда для бота через Deep Link (замени юзернейм если нужно)
                 const botUsername = "Absolute_Personal_Assistant_bot"; 
                 tg.openTelegramLink(`https://t.me/${botUsername}?start=sync_done`);
-
-                // 2. Закрываем окно приложения
-                setTimeout(() => {
-                    tg.close();
-                }, 100);
+                setTimeout(() => { tg.close(); }, 100);
             } catch (e) {
                 console.error("WebApp Error:", e);
                 tg.close();
