@@ -133,13 +133,13 @@
         drawStar(oldMetrics);
         localStorage.setItem('absolute_sync_state', JSON.stringify(targetMetrics));
 
-        const animationDuration = 2000; 
+        const animationDuration = 2500; 
         let startTime = null;
 
-        // МАТЕМАТИКА: Эффект пружины (Elastic Easing)
+        // МАТЕМАТИКА: Усиленный эффект пружины (Hyper Elastic Easing)
         function easeOutElastic(x) {
-            const c4 = (2 * Math.PI) / 3;
-            return x === 0 ? 0 : x === 1 ? 1 : Math.pow(2, -10 * x) * Math.sin((x * 10 - 0.75) * c4) + 1;
+            const c4 = (2 * Math.PI) / 1.5; // Было 3, стало 1.5 (больше колебаний)
+            return x === 0 ? 0 : x === 1 ? 1 : Math.pow(2, -7 * x) * Math.sin((x * 10 - 0.75) * c4) + 1; // Было -10, стало -7 (больше амплитуда)
         }
 
         function animate(currentTime) {
