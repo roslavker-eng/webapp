@@ -1,54 +1,57 @@
 <!DOCTYPE html>
 <html lang="ru">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>АБСОЛЮТ | СИНХРОСФЕРА</title>
-    <script src="https://telegram.org/js/telegram-web-app.js?v=3"></script>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <style>
-        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@100;300;400&display=swap');
-        :root { --accent: #5A9BD5; --bg-deep: #0a1628; --bg-light: #1c3554; }
-        body { 
-            background: radial-gradient(circle at center, var(--bg-light) 0%, var(--bg-deep) 100%);
-            color: #fff; font-family: 'Inter', sans-serif; overflow: hidden; margin: 0; 
-        }
-        .fade-in { animation: fadeIn 1.2s ease-out forwards; }
-        @keyframes fadeIn { 0% { opacity: 0; filter: blur(10px); } 100% { opacity: 1; filter: blur(0); } }
-        canvas { filter: drop-shadow(0 0 25px rgba(90, 155, 213, 0.4)); z-index: 5; }
-        
-        .header-group { display: flex; flex-direction: column; align-items: center; width: 100%; text-align: center; }
-        .title-main { font-size: 18px; font-weight: 100; line-height: 1; letter-spacing: 0.8em; text-transform: uppercase; opacity: 0.9; margin-bottom: 8px; margin-right: -0.8em; }
-        .title-sub { font-size: 9px; letter-spacing: 0.35em; color: rgba(255,255,255,0.4); text-transform: uppercase; margin-bottom: 12px; margin-right: -0.35em; }
-
-        .sphere-label {
-            position: absolute; font-size: 8px; color: rgba(255,255,255,0.7);
-            text-transform: uppercase; letter-spacing: 0.1em; text-align: center;
-            pointer-events: none; white-space: nowrap; transform: translate(-50%, -50%);
-            z-index: 10; line-height: 1.2;
-        }
-        .sphere-label b { color: var(--accent); font-size: 10px; display: block; margin-top: 2px; font-weight: 400; }
-    </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>АБСОЛЮТ | СИНХРОСФЕРА</title>
+<script src="https://telegram.org/js/telegram-web-app.js?v=3"></script>
+<script src="https://cdn.tailwindcss.com"></script>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@100;300;400&display=swap');
+:root { --accent: #5A9BD5; --bg-deep: #0a1628; --bg-light: #1c3554; }
+body { 
+background: radial-gradient(circle at center, var(--bg-light) 0%, var(--bg-deep) 100%);
+color: #fff; font-family: 'Inter', sans-serif; overflow: hidden; margin: 0; 
+}
+.fade-in { animation: fadeIn 1.2s ease-out forwards; }
+@keyframes fadeIn { 0% { opacity: 0; filter: blur(10px); } 100% { opacity: 1; filter: blur(0); } }
+canvas { filter: drop-shadow(0 0 25px rgba(90, 155, 213, 0.4)); z-index: 5; }
+.header-group { display: flex; flex-direction: column; align-items: center; width: 100%; text-align: center; }
+.title-main { font-size: 18px; font-weight: 100; line-height: 1; letter-spacing: 0.8em; text-transform: uppercase; opacity: 0.9; margin-bottom: 8px; margin-right: -0.8em; }
+.title-sub { font-size: 9px; letter-spacing: 0.35em; color: rgba(255,255,255,0.4); text-transform: uppercase; margin-bottom: 12px; margin-right: -0.35em; }
+.sphere-label {
+position: absolute; font-size: 8px; color: rgba(255,255,255,0.7);
+text-transform: uppercase; letter-spacing: 0.1em; text-align: center;
+pointer-events: none; white-space: nowrap; transform: translate(-50%, -50%);
+z-index: 10; line-height: 1.2;
+}
+.sphere-label b { color: var(--accent); font-size: 10px; display: block; margin-top: 2px; font-weight: 400; }
+</style>
 </head>
 <body class="flex flex-col items-center justify-center min-h-screen">
-    <div id="main-ui" class="fade-in flex flex-col items-center z-10 w-full relative">
-        <div class="header-group">
-            <h1 class="title-main">СИНХРОСФЕРА</h1>
-            <p class="title-sub">Система 6 Сфер</p>
-            <div class="h-[1px] w-24 bg-[var(--accent)] opacity-30"></div>
-        </div>
-        <div id="starContainer" class="relative mt-12 w-[340px] h-[340px] flex items-center justify-center">
-            <canvas id="starCanvas"></canvas>
-            <div id="labels"></div>
-        </div>
-        <div class="mt-14 relative z-50">
-            <button onclick="sendDataAndClose()" class="cursor-pointer backdrop-blur-md bg-white/5 border border-white/20 px-10 py-3 text-[10px] tracking-[0.2em] uppercase active:scale-95 transition-all">ЗАКРЫТЬ</button>
-        </div>
-    </div>
-
-    <script>
-        const tg = window.Telegram.WebApp;
-        tg.expand(); tg.ready();
+<div id="main-ui" class="fade-in flex flex-col items-center z-10 w-full relative">
+<div class="header-group">
+<h1 class="title-main">СИНХРОСФЕРА</h1>
+<p class="title-sub">Система 6 Сфер</p>
+<div class="h-[1px] w-24 bg-[var(--accent)] opacity-30"></div>
+</div>
+<div id="starContainer" class="relative mt-12 w-[340px] h-[340px] flex items-center justify-center">
+<canvas id="starCanvas"></canvas>
+<div id="labels"></div>
+</div>
+<div class="mt-14 relative z-50">
+<button onclick="sendDataAndClose()" class="cursor-pointer backdrop-blur-md bg-white/5 border border-white/20 px-10 py-3 text-[10px] tracking-[0.2em] uppercase active:scale-95 transition-all">ЗАКРЫТЬ</button>
+</div>
+</div>
+<script>
+        // БЕЗОПАСНАЯ ИНИЦИАЛИЗАЦИЯ TELEGRAM (Защита от блокировки VPN)
+        let tg = null;
+        try {
+            if (window.Telegram && window.Telegram.WebApp) {
+                tg = window.Telegram.WebApp;
+                tg.expand(); tg.ready();
+            }
+        } catch (e) { console.warn("Telegram SDK blocked"); }
         
         const canvas = document.getElementById('starCanvas');
         const ctx = canvas.getContext('2d');
@@ -82,7 +85,8 @@
 
             // Точки
             for (let i = 0; i < 6; i++) {
-                const r = minR + (values[i]/100) * (maxR - minR);
+                const val = values[i] || 50; // Защита от пустых значений в битом кэше
+                const r = minR + (val/100) * (maxR - minR);
                 const a = (i * 60 - 90) * (Math.PI/180);
                 const x = centerX + r * Math.cos(a);
                 const y = centerY + r * Math.sin(a);
@@ -92,7 +96,7 @@
                 const ly = centerY + (r + 35) * Math.sin(a);
                 labelElements[i].style.left = `${lx}px`;
                 labelElements[i].style.top = `${ly}px`;
-                labelElements[i].innerHTML = `${sphereNames[i]}<b>${Math.round(values[i])}%</b>`;
+                labelElements[i].innerHTML = `${sphereNames[i]}<b>${Math.round(val)}%</b>`;
             }
 
             // Фигура
@@ -116,11 +120,23 @@
         const urlParams = new URLSearchParams(window.location.search);
         const mParam = urlParams.get('m');
         const targetMetrics = mParam ? mParam.replace(/[\[\]\s]/g, '').split(',').map(Number) : [50, 50, 50, 50, 50, 50];
-        const savedState = localStorage.getItem('absolute_sync_state');
-        const oldMetrics = savedState ? JSON.parse(savedState) : [50, 50, 50, 50, 50, 50];
+        
+        // БЕЗОПАСНОЕ ЧТЕНИЕ ПАМЯТИ (Защита от фатальной ошибки JSON)
+        let oldMetrics = [50, 50, 50, 50, 50, 50];
+        try {
+            const savedState = localStorage.getItem('absolute_sync_state');
+            if (savedState) {
+                oldMetrics = JSON.parse(savedState);
+            }
+        } catch (e) {
+            localStorage.removeItem('absolute_sync_state'); // Чистим битый кэш
+        }
 
         drawStar(oldMetrics);
-        localStorage.setItem('absolute_sync_state', JSON.stringify(targetMetrics));
+        
+        try {
+            localStorage.setItem('absolute_sync_state', JSON.stringify(targetMetrics));
+        } catch(e) {}
 
         // ПАРАМЕТРЫ ПУЛЬСИРУЮЩЕЙ АНИМАЦИИ
         const animationDuration = 3200; // Увеличено для красоты возврата
@@ -132,7 +148,7 @@
             let progress = Math.min(elapsed / animationDuration, 1);
             
             const currentMetrics = targetMetrics.map((targetVal, i) => {
-                const startVal = oldMetrics[i];
+                const startVal = oldMetrics[i] || 50;
                 
                 // ЭТАП 1: Взлет до 100% (первые 25% времени)
                 if (progress < 0.25) {
@@ -157,12 +173,22 @@
         setTimeout(() => { requestAnimationFrame(animate); }, 800);
 
         function sendDataAndClose() {
+            const botUsername = "Absolute_Personal_Assistant_bot"; 
             try {
-                const botUsername = "Absolute_Personal_Assistant_bot"; 
-                tg.openTelegramLink(`https://t.me/${botUsername}?start=sync_done`);
-                setTimeout(() => { tg.close(); }, 800);
-            } catch (e) { tg.close(); }
+                // Если Telegram загрузился нормально
+                if (tg && typeof tg.openTelegramLink === 'function') {
+                    tg.openTelegramLink(`https://t.me/${botUsername}?start=sync_done`);
+                    setTimeout(() => { tg.close(); }, 800);
+                } else {
+                    // Жесткий фоллбэк: если tg.close() не работает из-за VPN
+                    window.location.href = `https://t.me/${botUsername}?start=sync_done`;
+                }
+            } catch (e) { 
+                window.location.href = `https://t.me/${botUsername}?start=sync_done`;
+            }
         }
     </script>
 </body>
 </html>
+
+
