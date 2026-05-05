@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>АБСОЛЮТ | СИНХРОСФЕРА</title>
+<title>АБСОЛЮТ | СИНХРОСФЕРА 8</title>
 <script src="https://telegram.org/js/telegram-web-app.js?v=3"></script>
 <script src="https://cdn.tailwindcss.com"></script>
 <style>
@@ -20,31 +20,31 @@ canvas { filter: drop-shadow(0 0 25px rgba(90, 155, 213, 0.4)); z-index: 5; }
 .title-main { font-size: 18px; font-weight: 100; line-height: 1; letter-spacing: 0.8em; text-transform: uppercase; opacity: 0.9; margin-bottom: 8px; margin-right: -0.8em; }
 .title-sub { font-size: 9px; letter-spacing: 0.35em; color: rgba(255,255,255,0.4); text-transform: uppercase; margin-bottom: 12px; margin-right: -0.35em; }
 .sphere-label {
-position: absolute; font-size: 8px; color: rgba(255,255,255,0.7);
+position: absolute; font-size: 9px; color: rgba(255,255,255,0.7);
 text-transform: uppercase; letter-spacing: 0.1em; text-align: center;
 pointer-events: none; white-space: nowrap; transform: translate(-50%, -50%);
 z-index: 10; line-height: 1.2;
 }
-.sphere-label b { color: var(--accent); font-size: 10px; display: block; margin-top: 2px; font-weight: 400; }
+.sphere-label b { color: var(--accent); font-size: 11px; display: block; margin-top: 2px; font-weight: 400; }
 </style>
 </head>
 <body class="flex flex-col items-center justify-center min-h-screen">
 <div id="main-ui" class="fade-in flex flex-col items-center z-10 w-full relative">
 <div class="header-group">
 <h1 class="title-main">СИНХРОСФЕРА</h1>
-<p class="title-sub">Система 6 Сфер</p>
+<p class="title-sub">Система 8 Граней</p>
 <div class="h-[1px] w-24 bg-[var(--accent)] opacity-30"></div>
 </div>
-<div id="starContainer" class="relative mt-12 w-[340px] h-[340px] flex items-center justify-center">
+<div id="starContainer" class="relative mt-8 w-[350px] h-[350px] flex items-center justify-center">
 <canvas id="starCanvas"></canvas>
 <div id="labels"></div>
 </div>
-<div class="mt-14 relative z-50">
+<div class="mt-10 relative z-50">
 <button onclick="sendDataAndClose()" class="cursor-pointer backdrop-blur-md bg-white/5 border border-white/20 px-10 py-3 text-[10px] tracking-[0.2em] uppercase active:scale-95 transition-all">ЗАКРЫТЬ</button>
 </div>
 </div>
+
 <script>
-        // БЕЗОПАСНАЯ ИНИЦИАЛИЗАЦИЯ TELEGRAM (Защита от блокировки VPN)
         let tg = null;
         try {
             if (window.Telegram && window.Telegram.WebApp) {
@@ -58,9 +58,20 @@ z-index: 10; line-height: 1.2;
         const labelsContainer = document.getElementById('labels');
         const themeColor = '#5A9BD5';
 
-        const sphereNames = ["Духовно-психологическая", "Социальная", "Физическая", "Сексуальная", "Материальная", "Интеллектуальная"];
+        // ИСПРАВЛЕННЫЙ ПОРЯДОК: Баланс и Границы поменяны местами
+        const sphereNames = [
+            "ВЕРА",      // 0° (Сверху)
+            "ЯСНОСТЬ",   // 45°
+            "ЦЕЛЬ",      // 90° (Справа)
+            "ИЗМЕНЕНИЯ", // 135°
+            "ЭКСТАЗ",    // 180° (Снизу)
+            "БАЛАНС",    // 225°
+            "ГРАНИЦЫ",   // 270° (Слева)
+            "ЛОГИКА"     // 315°
+        ];
+
         const labelElements = [];
-        for (let i = 0; i < 6; i++) {
+        for (let i = 0; i < 8; i++) {
             const label = document.createElement('div');
             label.className = 'sphere-label';
             labelsContainer.appendChild(label);
@@ -68,38 +79,43 @@ z-index: 10; line-height: 1.2;
         }
 
         function drawStar(values) {
-            const size = 340; canvas.width = size; canvas.height = size;
+            const size = 350; canvas.width = size; canvas.height = size;
             const centerX = size/2; const centerY = size/2; 
-            const minR = 35; // Мертвая зона
-            const maxR = 105; 
+            const minR = 30; 
+            const maxR = 100; 
             const points = [];
             ctx.clearRect(0,0,size,size); 
             
-            // Сетка
             ctx.strokeStyle = 'rgba(90, 155, 213, 0.12)';
             ctx.lineWidth = 1;
             for(let j=0; j<=3; j++) {
                 const gridR = minR + (j/3) * (maxR - minR);
                 ctx.beginPath(); ctx.arc(centerX, centerY, gridR, 0, Math.PI*2); ctx.stroke();
             }
+            for (let i = 0; i < 8; i++) {
+                const a = (i * 45 - 90) * (Math.PI/180);
+                ctx.beginPath();
+                ctx.moveTo(centerX, centerY);
+                ctx.lineTo(centerX + maxR * Math.cos(a), centerY + maxR * Math.sin(a));
+                ctx.stroke();
+            }
 
-            // Точки
-            for (let i = 0; i < 6; i++) {
-                const val = values[i] || 50; // Защита от пустых значений в битом кэше
+            for (let i = 0; i < 8; i++) {
+                const val = values[i] || 50; 
                 const r = minR + (val/100) * (maxR - minR);
-                const a = (i * 60 - 90) * (Math.PI/180);
+                const a = (i * 45 - 90) * (Math.PI/180);
                 const x = centerX + r * Math.cos(a);
                 const y = centerY + r * Math.sin(a);
                 points.push({x, y});
                 
-                const lx = centerX + (r + 35) * Math.cos(a);
-                const ly = centerY + (r + 35) * Math.sin(a);
+                const labelDist = maxR + 40;
+                const lx = centerX + labelDist * Math.cos(a);
+                const ly = centerY + labelDist * Math.sin(a);
                 labelElements[i].style.left = `${lx}px`;
                 labelElements[i].style.top = `${ly}px`;
                 labelElements[i].innerHTML = `${sphereNames[i]}<b>${Math.round(val)}%</b>`;
             }
 
-            // Фигура
             if (points.length > 0) {
                 ctx.beginPath();
                 const first = points[0]; const last = points[points.length - 1];
@@ -110,36 +126,27 @@ z-index: 10; line-height: 1.2;
                     ctx.quadraticCurveTo(p0.x, p0.y, midX, midY);
                 }
                 ctx.closePath();
-                ctx.strokeStyle = themeColor; ctx.lineWidth = 2; ctx.stroke();
+                ctx.strokeStyle = themeColor; ctx.lineWidth = 2.5; ctx.stroke();
                 const grad = ctx.createRadialGradient(centerX, centerY, minR, centerX, centerY, maxR);
-                grad.addColorStop(0, themeColor + '80'); grad.addColorStop(1, themeColor + '10');
+                grad.addColorStop(0, themeColor + '90'); grad.addColorStop(1, themeColor + '15');
                 ctx.fillStyle = grad; ctx.fill();
             }
         }
 
         const urlParams = new URLSearchParams(window.location.search);
         const mParam = urlParams.get('m');
-        const targetMetrics = mParam ? mParam.replace(/[\[\]\s]/g, '').split(',').map(Number) : [50, 50, 50, 50, 50, 50];
+        const targetMetrics = mParam ? mParam.replace(/[\[\]\s]/g, '').split(',').map(Number) : [50, 50, 50, 50, 50, 50, 50, 50];
         
-        // БЕЗОПАСНОЕ ЧТЕНИЕ ПАМЯТИ (Защита от фатальной ошибки JSON)
-        let oldMetrics = [50, 50, 50, 50, 50, 50];
+        let oldMetrics = [40, 40, 40, 40, 40, 40, 40, 40];
         try {
-            const savedState = localStorage.getItem('absolute_sync_state');
-            if (savedState) {
-                oldMetrics = JSON.parse(savedState);
-            }
-        } catch (e) {
-            localStorage.removeItem('absolute_sync_state'); // Чистим битый кэш
-        }
+            const savedState = localStorage.getItem('absolute_sync_8_state');
+            if (savedState) oldMetrics = JSON.parse(savedState);
+        } catch (e) {}
 
         drawStar(oldMetrics);
-        
-        try {
-            localStorage.setItem('absolute_sync_state', JSON.stringify(targetMetrics));
-        } catch(e) {}
+        try { localStorage.setItem('absolute_sync_8_state', JSON.stringify(targetMetrics)); } catch(e) {}
 
-        // ПАРАМЕТРЫ ПУЛЬСИРУЮЩЕЙ АНИМАЦИИ
-        const animationDuration = 3200; // Увеличено для красоты возврата
+        const animationDuration = 5000; 
         let startTime = null;
 
         function animate(currentTime) {
@@ -147,25 +154,14 @@ z-index: 10; line-height: 1.2;
             const elapsed = currentTime - startTime;
             let progress = Math.min(elapsed / animationDuration, 1);
             
+            const easeOut = 1 - Math.pow(1 - progress, 3);
+            
             const currentMetrics = targetMetrics.map((targetVal, i) => {
-                const startVal = oldMetrics[i] || 50;
-                
-                // ЭТАП 1: Взлет до 100% (первые 25% времени)
-                if (progress < 0.25) {
-                    const p = progress / 0.25;
-                    const easeIn = p * p; // Ускорение
-                    return startVal + (100 - startVal) * easeIn;
-                } 
-                // ЭТАП 2: Медленный возврат к таргету (оставшиеся 75% времени)
-                else {
-                    const p = (progress - 0.25) / 0.75;
-                    const easeOut = 1 - Math.pow(1 - p, 4); // Плавное вязкое замедление
-                    return 100 - (100 - targetVal) * easeOut;
-                }
+                const startVal = oldMetrics[i] || 40;
+                return startVal + (targetVal - startVal) * easeOut;
             });
             
             drawStar(currentMetrics);
-            
             if (progress < 1) requestAnimationFrame(animate);
             else drawStar(targetMetrics);
         }
@@ -174,21 +170,14 @@ z-index: 10; line-height: 1.2;
 
         function sendDataAndClose() {
             const botUsername = "Absolute_Personal_Assistant_bot"; 
-            try {
-                // Если Telegram загрузился нормально
-                if (tg && typeof tg.openTelegramLink === 'function') {
-                    tg.openTelegramLink(`https://t.me/${botUsername}?start=sync_done`);
-                    setTimeout(() => { tg.close(); }, 800);
-                } else {
-                    // Жесткий фоллбэк: если tg.close() не работает из-за VPN
-                    window.location.href = `https://t.me/${botUsername}?start=sync_done`;
-                }
-            } catch (e) { 
-                window.location.href = `https://t.me/${botUsername}?start=sync_done`;
+            const link = `https://t.me/${botUsername}?start=sync_done`;
+            if (tg && typeof tg.openTelegramLink === 'function') {
+                tg.openTelegramLink(link);
+                setTimeout(() => { tg.close(); }, 500);
+            } else {
+                window.location.href = link;
             }
         }
     </script>
 </body>
 </html>
-
-
