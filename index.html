@@ -58,7 +58,6 @@ z-index: 10; line-height: 1.2;
         const labelsContainer = document.getElementById('labels');
         const themeColor = '#5A9BD5';
 
-        // ИСПРАВЛЕННЫЙ ПОРЯДОК: Баланс и Границы поменяны местами
         const sphereNames = [
             "ВЕРА",      // 0° (Сверху)
             "ЯСНОСТЬ",   // 45°
@@ -146,7 +145,7 @@ z-index: 10; line-height: 1.2;
         drawStar(oldMetrics);
         try { localStorage.setItem('absolute_sync_8_state', JSON.stringify(targetMetrics)); } catch(e) {}
 
-        const animationDuration = 5000; 
+        const animationDuration = 2500; 
         let startTime = null;
 
         function animate(currentTime) {
@@ -154,11 +153,15 @@ z-index: 10; line-height: 1.2;
             const elapsed = currentTime - startTime;
             let progress = Math.min(elapsed / animationDuration, 1);
             
-            const easeOut = 1 - Math.pow(1 - progress, 3);
+            // Упругая анимация: стандартная кривая easeOutBack
+            const p = progress - 1;
+            const c1 = 1.70158;
+            const c3 = c1 + 1;
+            const easeOutBack = 1 + c3 * Math.pow(p, 3) + c1 * Math.pow(p, 2);
             
             const currentMetrics = targetMetrics.map((targetVal, i) => {
                 const startVal = oldMetrics[i] || 40;
-                return startVal + (targetVal - startVal) * easeOut;
+                return startVal + (targetVal - startVal) * easeOutBack;
             });
             
             drawStar(currentMetrics);
